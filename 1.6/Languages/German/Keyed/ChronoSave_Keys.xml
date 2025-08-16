@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Mod Settings -->
+  <ChronoSave_SettingsCategory>Chrono Save</ChronoSave_SettingsCategory>
+  
+  <!-- Settings Labels -->
+  <ChronoSave_EnabledLabel>Chrono Save aktivieren</ChronoSave_EnabledLabel>
+  <ChronoSave_EnabledTooltip>Wenn aktiviert, speichert das Spiel automatisch in regelmäßigen Echtzeit-Intervallen.</ChronoSave_EnabledTooltip>
+  
+  <ChronoSave_IntervalLabel>Speicherintervall (Minuten)</ChronoSave_IntervalLabel>
+  <ChronoSave_IntervalTooltip>Wie oft eine Chronospeicherung erstellt werden soll, gemessen in Echtzeit-Minuten. Gültiger Bereich: 1-60 Minuten.</ChronoSave_IntervalTooltip>
+  
+  <ChronoSave_NumberOfSavesLabel>Anzahl der aufzubewahrenden Speicherstände: {0}</ChronoSave_NumberOfSavesLabel>
+  <ChronoSave_NumberOfSavesTooltip>Die Anzahl der Chronospeicherdateien, die aufbewahrt werden sollen. Sobald dieses Limit erreicht ist, werden die ältesten Speicherstände überschrieben.</ChronoSave_NumberOfSavesTooltip>
+  
+  <!-- Info Section -->
+  <ChronoSave_InfoHeader>Über Chrono Save</ChronoSave_InfoHeader>
+  <ChronoSave_InfoText>Chrono Save erstellt automatische Speicherstände basierend auf Echtzeit statt auf Spielzeit. Dies gewährleistet regelmäßige Speicherungen auch wenn das Spiel pausiert ist oder mit unterschiedlichen Geschwindigkeiten läuft. Chronospeicherungen sind unabhängig vom normalen Autosave-System.</ChronoSave_InfoText>
+  
+  <!-- In-Game Messages -->
+  <ChronoSave_SavingMessage>Erstelle Chronospeicherung...</ChronoSave_SavingMessage>
+  <ChronoSave_SavedMessage>Chronospeicherung erstellt: {0}</ChronoSave_SavedMessage>
+</LanguageData>

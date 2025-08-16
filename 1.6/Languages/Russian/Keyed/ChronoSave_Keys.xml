@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Mod Settings -->
+  <ChronoSave_SettingsCategory>Chrono Save</ChronoSave_SettingsCategory>
+  
+  <!-- Settings Labels -->
+  <ChronoSave_EnabledLabel>Включить Chrono Save</ChronoSave_EnabledLabel>
+  <ChronoSave_EnabledTooltip>При включении игра будет автоматически сохраняться через регулярные интервалы реального времени.</ChronoSave_EnabledTooltip>
+  
+  <ChronoSave_IntervalLabel>Интервал сохранения (минуты)</ChronoSave_IntervalLabel>
+  <ChronoSave_IntervalTooltip>Как часто создавать хроносохранение, измеряется в реальных минутах. Допустимый диапазон: 1-60 минут.</ChronoSave_IntervalTooltip>
+  
+  <ChronoSave_NumberOfSavesLabel>Количество сохранений: {0}</ChronoSave_NumberOfSavesLabel>
+  <ChronoSave_NumberOfSavesTooltip>Количество файлов хроносохранений для хранения. По достижении этого лимита старые сохранения будут перезаписаны.</ChronoSave_NumberOfSavesTooltip>
+  
+  <!-- Info Section -->
+  <ChronoSave_InfoHeader>О Chrono Save</ChronoSave_InfoHeader>
+  <ChronoSave_InfoText>Chrono Save создаёт автоматические сохранения на основе реального времени, а не игрового. Это гарантирует регулярные сохранения даже когда игра на паузе или работает с разной скоростью. Хроносохранения независимы от обычной системы автосохранения.</ChronoSave_InfoText>
+  
+  <!-- In-Game Messages -->
+  <ChronoSave_SavingMessage>Создание хроносохранения...</ChronoSave_SavingMessage>
+  <ChronoSave_SavedMessage>Хроносохранение создано: {0}</ChronoSave_SavedMessage>
+</LanguageData>

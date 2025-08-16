@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Chrono Save</name>
+  <author>Zei33</author>
+  <modVersion>1.0.0</modVersion>
+  <packageId>Zei33.ChronoSave</packageId>
+  <description>Never lose progress again! Chrono Save adds a real-time autosave system that protects your colony with regular saves based on actual time, not game time.
+
+CORE FEATURES
+- Automatic saves every 5 minutes of real time (configurable)
+- Works independently of vanilla autosaves - no interference
+- Continues saving even when game is paused or at different speeds
+- Rotating save system prevents save file buildup
+
+FUNCTIONALITY
+- Uses real-world time tracking instead of in-game time
+- Creates saves named "Chronosave-X" with rotating numbers
+- Saves are standard RimWorld saves - fully compatible with all features
+- Minimal performance impact with efficient time tracking
+
+SAVE MANAGEMENT
+- Default: 10 rotating chronosaves (Chronosave-1 through Chronosave-10)
+- Automatically overwrites oldest save when limit is reached
+- Configurable save count (1-25 saves)
+- Independent save files won't conflict with manual or auto saves
+
+FLEXIBLE CONFIGURATION
+- Save interval: Adjustable from 1 to 60 minutes
+- Save count: Choose how many chronosaves to maintain
+- Enable/disable toggle: Turn the system on or off as needed
+- Access settings through Options → Mod Settings → Chrono Save
+
+PAUSE-FRIENDLY DESIGN
+- Saves continue even when game is paused
+- Works at all game speeds (1x, 2x, 3x)
+- Perfect for long planning sessions or AFK periods</description>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077</steamWorkshopUrl>
+      <downloadUrl>https://github.com/pardeike/HarmonyRimWorld/releases/latest</downloadUrl>
+    </li>
+  </modDependencies>
+  <loadAfter />
+  <incompatibleWith />
+</ModMetaData>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <!-- Mod Settings -->
+  <ChronoSave_SettingsCategory>クロノセーブ</ChronoSave_SettingsCategory>
+  
+  <!-- Settings Labels -->
+  <ChronoSave_EnabledLabel>クロノセーブを有効化</ChronoSave_EnabledLabel>
+  <ChronoSave_EnabledTooltip>有効にすると、ゲームはリアルタイムで定期的に自動セーブします。</ChronoSave_EnabledTooltip>
+  
+  <ChronoSave_IntervalLabel>セーブ間隔（分）</ChronoSave_IntervalLabel>
+  <ChronoSave_IntervalTooltip>クロノセーブを作成する頻度（現実世界の分単位）。有効範囲：1-60分。</ChronoSave_IntervalTooltip>
+  
+  <ChronoSave_NumberOfSavesLabel>保持するセーブ数：{0}</ChronoSave_NumberOfSavesLabel>
+  <ChronoSave_NumberOfSavesTooltip>維持するクロノセーブファイルの数。この制限に達すると、最も古いセーブが上書きされます。</ChronoSave_NumberOfSavesTooltip>
+  
+  <!-- Info Section -->
+  <ChronoSave_InfoHeader>クロノセーブについて</ChronoSave_InfoHeader>
+  <ChronoSave_InfoText>クロノセーブはゲーム内時間ではなく現実世界の時間に基づいて自動セーブを作成します。これにより、ゲームが一時停止している場合や異なる速度で実行されている場合でも定期的なセーブが保証されます。クロノセーブは通常のオートセーブシステムから独立しています。</ChronoSave_InfoText>
+  
+  <!-- In-Game Messages -->
+  <ChronoSave_SavingMessage>クロノセーブを作成中...</ChronoSave_SavingMessage>
+  <ChronoSave_SavedMessage>クロノセーブを作成しました：{0}</ChronoSave_SavedMessage>
+</LanguageData>
