@@ -81,6 +81,12 @@ namespace ChronoSave.Core
         {
             base.GameComponentUpdate();
             
+            // Skip if not fully initialized (prevents null reference during game startup)
+            if (Find.World == null || Find.WorldInterface == null)
+            {
+                return;
+            }
+            
             // Skip if chronosave is disabled or saving is temporarily disabled
             if (!Settings.ChronoSaveEnabled || GameDataSaveLoader.SavingIsTemporarilyDisabled)
             {

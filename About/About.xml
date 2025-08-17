@@ -2,7 +2,7 @@
 <ModMetaData>
   <name>Chrono Save</name>
   <author>Zei33</author>
-  <modVersion>1.0.0</modVersion>
+  <modVersion>1.0.1</modVersion>
   <packageId>Zei33.ChronoSave</packageId>
   <description>Never lose progress again! Chrono Save adds a real-time autosave system that protects your colony with regular saves based on actual time, not game time.
 
