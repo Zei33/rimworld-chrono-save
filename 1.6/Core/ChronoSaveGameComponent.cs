@@ -82,7 +82,7 @@ namespace ChronoSave.Core
             base.GameComponentUpdate();
             
             // Skip if not fully initialized (prevents null reference during game startup)
-            if (Find.World == null || Find.WorldInterface == null)
+            if (Find.World == null || Find.WorldInterface == null || Current.Game == null)
             {
                 return;
             }
@@ -111,11 +111,25 @@ namespace ChronoSave.Core
         {
             try
             {
+                // Double-check game state before attempting save
+                if (Current.Game == null)
+                {
+                    Log.Warning("[Chrono Save] Cannot save: Current.Game is null");
+                    return;
+                }
+                
                 string saveName = GetNextChronoSaveName();
                 
                 // Queue the save operation as a long event to prevent UI freezing
                 LongEventHandler.QueueLongEvent(() =>
                 {
+                    // Final safety check inside the queued operation
+                    if (Current.Game == null)
+                    {
+                        Log.Warning("[Chrono Save] Save aborted: Current.Game became null during queue");
+                        return;
+                    }
+                    
                     GameDataSaveLoader.SaveGame(saveName);
                     Messages.Message("ChronoSave_SavedMessage".Translate(saveName), MessageTypeDefOf.SilentInput);
                 }, "ChronoSave_SavingMessage", false, null);
