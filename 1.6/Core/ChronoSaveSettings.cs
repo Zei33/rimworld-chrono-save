@@ -14,12 +14,12 @@ namespace ChronoSave.Core
         /// <summary>
         /// Interval between chronosaves in minutes (default: 5 minutes).
         /// </summary>
-        private float saveIntervalMinutes = 5f;
+        private float saveIntervalMinutes = ChronoSaveSchedule.DefaultIntervalMinutes;
         
         /// <summary>
         /// Number of chronosave files to maintain before looping (default: 10).
         /// </summary>
-        private int numberOfSaves = 10;
+        private int numberOfSaves = ChronoSaveSchedule.DefaultSlots;
         
         /// <summary>
         /// Whether the chronosave system is enabled (default: true).
@@ -29,7 +29,7 @@ namespace ChronoSave.Core
         /// <summary>
         /// UI buffer for save interval input.
         /// </summary>
-        private string saveIntervalBuffer = "5";
+        private string saveIntervalBuffer = ChronoSaveSchedule.FormatIntervalBuffer(ChronoSaveSchedule.DefaultIntervalMinutes);
         
         /// <summary>
         /// Gets the save interval in minutes.
@@ -46,6 +46,11 @@ namespace ChronoSave.Core
         /// </summary>
         public bool ChronoSaveEnabled => chronoSaveEnabled;
         
+        /// <summary>
+        /// Height of the slider row, matching <c>Listing_Standard.Slider</c>.
+        /// </summary>
+        private const float SliderHeight = 22f;
+
         /// <summary>
         /// The most recent count of leftover chronosave backup files.
         /// </summary>
@@ -117,27 +122,40 @@ namespace ChronoSave.Core
             Rect intervalFieldRect = new Rect(intervalRect.x + intervalRect.width * 0.7f, intervalRect.y, intervalRect.width * 0.3f, intervalRect.height);
             
             Widgets.Label(intervalLabelRect, "ChronoSave_IntervalLabel".Translate());
-            TooltipHandler.TipRegion(intervalLabelRect, "ChronoSave_IntervalTooltip".Translate());
-            
-            saveIntervalBuffer = Widgets.TextField(intervalFieldRect, saveIntervalBuffer);
-            
-            // Validate and apply interval
-            if (float.TryParse(saveIntervalBuffer, out float parsedInterval))
-            {
-                saveIntervalMinutes = Mathf.Clamp(parsedInterval, 1f, 60f);
-            }
-            else
-            {
-                saveIntervalBuffer = saveIntervalMinutes.ToString();
-            }
-            
+
+            // Vanilla's numeric field rather than a raw TextField. It keeps the buffer and the value
+            // apart, so an empty buffer is accepted and left empty while the player retypes
+            // (IsPartiallyOrFullyTypedNumber returns true for "" and IsFullyTypedNumber returns
+            // false for it, so nothing refills the field), and every fully typed edit is clamped and
+            // written back into the buffer, so the field can no longer show a number that is not the
+            // one in effect. The hand-rolled version did the opposite on both counts.
+            Widgets.TextFieldNumeric(
+                intervalFieldRect,
+                ref saveIntervalMinutes,
+                ref saveIntervalBuffer,
+                ChronoSaveSchedule.MinIntervalMinutes,
+                ChronoSaveSchedule.MaxIntervalMinutes);
+
+            // The whole row, not just the label. The field is where the player's cursor actually is.
+            TooltipHandler.TipRegion(intervalRect, "ChronoSave_IntervalTooltip".Translate());
+
             listing.Gap(12f);
-            
-            // Number of saves slider
-            listing.Label("ChronoSave_NumberOfSavesLabel".Translate(numberOfSaves));
-            numberOfSaves = Mathf.RoundToInt(listing.Slider(numberOfSaves, 1f, 25f));
-            TooltipHandler.TipRegion(listing.GetRect(0f), "ChronoSave_NumberOfSavesTooltip".Translate());
-            
+
+            // Number of saves slider. listing.Slider returns the value, not the rect it drew into,
+            // which is why the old code reached for listing.GetRect(0f) and bound the tooltip to a
+            // zero-height rect that could never be hovered. Taking the rect first is
+            // Listing_Standard.Slider inlined, so the layout does not move.
+            TaggedString savesTooltip = "ChronoSave_NumberOfSavesTooltip".Translate();
+
+            Rect savesLabelRect = listing.Label("ChronoSave_NumberOfSavesLabel".Translate(numberOfSaves));
+            Rect savesSliderRect = listing.GetRect(SliderHeight);
+            numberOfSaves = Mathf.RoundToInt(Widgets.HorizontalSlider(
+                savesSliderRect, numberOfSaves, ChronoSaveSchedule.MinSlots, ChronoSaveSchedule.MaxSlots));
+            listing.Gap(listing.verticalSpacing);
+
+            TooltipHandler.TipRegion(savesLabelRect, savesTooltip);
+            TooltipHandler.TipRegion(savesSliderRect, savesTooltip);
+
             listing.Gap(20f);
             
             // Info section
@@ -197,6 +215,23 @@ namespace ChronoSave.Core
         }
 
         /// <summary>
+        /// Folds any part-finished text edit back into the stored values.
+        /// </summary>
+        /// <remarks>
+        /// The interval field deliberately tolerates an empty buffer while the player retypes, which
+        /// is the fix for not being able to clear it. The consequence is that a window closed on an
+        /// empty field would reopen on an empty field, so the buffer is settled here instead.
+        /// Called from <c>ChronoSaveMod.WriteSettings</c>, which
+        /// <c>RimWorld.Dialog_ModSettings.PreClose</c> reaches on every close of the window.
+        /// </remarks>
+        public void CommitEditBuffers()
+        {
+            saveIntervalMinutes = ChronoSaveSchedule.ParseIntervalBuffer(saveIntervalBuffer, saveIntervalMinutes);
+            saveIntervalBuffer = ChronoSaveSchedule.FormatIntervalBuffer(saveIntervalMinutes);
+            numberOfSaves = ChronoSaveSchedule.ClampSlotCount(numberOfSaves);
+        }
+
+        /// <summary>
         /// Saves and loads the mod settings.
         /// </summary>
         public override void ExposeData()
@@ -210,9 +245,9 @@ namespace ChronoSave.Core
             // Validate loaded values
             if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
-                saveIntervalMinutes = Mathf.Clamp(saveIntervalMinutes, 1f, 60f);
-                numberOfSaves = Mathf.Clamp(numberOfSaves, 1, 25);
-                saveIntervalBuffer = saveIntervalMinutes.ToString();
+                saveIntervalMinutes = ChronoSaveSchedule.ClampIntervalMinutes(saveIntervalMinutes);
+                numberOfSaves = ChronoSaveSchedule.ClampSlotCount(numberOfSaves);
+                saveIntervalBuffer = ChronoSaveSchedule.FormatIntervalBuffer(saveIntervalMinutes);
             }
         }
     }

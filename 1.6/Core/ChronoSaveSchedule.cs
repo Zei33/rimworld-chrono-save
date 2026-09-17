@@ -29,6 +29,31 @@ namespace ChronoSave.Core
         public const int MaxSlots = 25;
 
         /// <summary>
+        /// The smallest number of slots the settings interface allows.
+        /// </summary>
+        public const int MinSlots = 1;
+
+        /// <summary>
+        /// The number of slots a fresh install uses.
+        /// </summary>
+        public const int DefaultSlots = 10;
+
+        /// <summary>
+        /// The shortest interval the settings interface allows, in minutes.
+        /// </summary>
+        public const float MinIntervalMinutes = 1f;
+
+        /// <summary>
+        /// The longest interval the settings interface allows, in minutes.
+        /// </summary>
+        public const float MaxIntervalMinutes = 60f;
+
+        /// <summary>
+        /// The interval a fresh install uses, in minutes.
+        /// </summary>
+        public const float DefaultIntervalMinutes = 5f;
+
+        /// <summary>
         /// The longest colony key a filename will carry.
         /// </summary>
         /// <remarks>
@@ -291,6 +316,101 @@ namespace ChronoSave.Core
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Brings an interval into the range the settings window allows.
+        /// </summary>
+        /// <param name="minutes">The interval to clamp.</param>
+        /// <returns>An interval between <see cref="MinIntervalMinutes"/> and <see cref="MaxIntervalMinutes"/>.</returns>
+        /// <remarks>
+        /// Not-a-number is mapped to the default rather than passed through. A NaN interval makes
+        /// every comparison in <see cref="IsDue"/> false, so chronosaving would stop with nothing in
+        /// the log to say why. Written as plain comparisons rather than <c>Mathf.Clamp</c>, which
+        /// returns NaN unchanged and would pull UnityEngine into this file.
+        /// </remarks>
+        public static float ClampIntervalMinutes(float minutes)
+        {
+            if (float.IsNaN(minutes))
+            {
+                return DefaultIntervalMinutes;
+            }
+
+            if (minutes < MinIntervalMinutes)
+            {
+                return MinIntervalMinutes;
+            }
+
+            if (minutes > MaxIntervalMinutes)
+            {
+                return MaxIntervalMinutes;
+            }
+
+            return minutes;
+        }
+
+        /// <summary>
+        /// Brings a slot count into the range the settings window allows.
+        /// </summary>
+        /// <param name="slots">The count to clamp.</param>
+        /// <returns>A count between <see cref="MinSlots"/> and <see cref="MaxSlots"/>.</returns>
+        public static int ClampSlotCount(int slots)
+        {
+            if (slots < MinSlots)
+            {
+                return MinSlots;
+            }
+
+            if (slots > MaxSlots)
+            {
+                return MaxSlots;
+            }
+
+            return slots;
+        }
+
+        /// <summary>
+        /// Reads an interval out of the settings window's edit buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer, which may legitimately be empty part way through an edit.</param>
+        /// <param name="fallbackMinutes">The interval to keep when the buffer holds nothing usable.</param>
+        /// <returns>The interval to store.</returns>
+        /// <remarks>
+        /// An empty buffer keeps the current value rather than resetting it, which is the whole
+        /// point: the field has to tolerate being cleared so the player can select all and retype.
+        ///
+        /// Parsed with the invariant culture. RimWorld forces en-US on the main thread at startup,
+        /// and vanilla's numeric field only ever admits a full stop as the decimal separator, so this
+        /// matches the game. Naming the culture keeps it correct on a machine that is not en-US.
+        /// </remarks>
+        public static float ParseIntervalBuffer(string buffer, float fallbackMinutes)
+        {
+            if (string.IsNullOrEmpty(buffer))
+            {
+                return ClampIntervalMinutes(fallbackMinutes);
+            }
+
+            if (!float.TryParse(buffer, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return ClampIntervalMinutes(fallbackMinutes);
+            }
+
+            return ClampIntervalMinutes(parsed);
+        }
+
+        /// <summary>
+        /// Renders an interval for the settings window's edit buffer.
+        /// </summary>
+        /// <param name="minutes">The interval to render.</param>
+        /// <returns>The text to put in the field.</returns>
+        /// <remarks>
+        /// Invariant culture, matching the parser and vanilla's own field. A comma decimal separator
+        /// would be rejected by vanilla's numeric field, which admits only digits, a minus and a full
+        /// stop, so the player's own saved value would be refused on a German or French machine.
+        /// </remarks>
+        public static string FormatIntervalBuffer(float minutes)
+        {
+            return minutes.ToString("0.##########", CultureInfo.InvariantCulture);
         }
 
         /// <summary>

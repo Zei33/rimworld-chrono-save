@@ -52,5 +52,20 @@ namespace ChronoSave
         {
             Settings.DoSettingsWindowContents(inRect);
         }
+
+        /// <summary>
+        /// Writes the mod settings, settling any part-finished text edit first.
+        /// </summary>
+        /// <remarks>
+        /// <c>RimWorld.Dialog_ModSettings.PreClose</c> calls this on every close of the settings
+        /// window, which is the hook the interval field needs: it deliberately tolerates being
+        /// cleared while the player retypes, so a window closed on an empty field would otherwise
+        /// reopen on an empty field.
+        /// </remarks>
+        public override void WriteSettings()
+        {
+            Settings.CommitEditBuffers();
+            base.WriteSettings();
+        }
     }
 }

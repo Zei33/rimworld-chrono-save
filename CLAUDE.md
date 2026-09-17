@@ -13,7 +13,7 @@ paused, which is the mod's selling point and the source of both live user report
 |---|---|---|
 | `1.6/ModEntry.cs` | `ChronoSaveMod : Mod` | Holds the static `Settings`, calls `harmony.PatchAll()` with id `com.zei33.chronosave`, delegates the settings window. 55 LOC. |
 | `1.6/Core/ChronoSaveGameComponent.cs` | `ChronoSaveGameComponent : GameComponent` | All scheduling and saving. 207 LOC. |
-| `1.6/Core/ChronoSaveSettings.cs` | `ChronoSaveSettings : ModSettings` | Three settings plus the IMGUI page. 118 LOC. |
+| `1.6/Core/ChronoSaveSettings.cs` | `ChronoSaveSettings : ModSettings` | Three settings plus the IMGUI page, the Commitment notices and the leftover-backup report. |
 | `1.6/Core/ChronoSaveSchedule.cs` | static | Every scheduling decision that can be stated over plain values, so it can be tested without the game. No game state. |
 | `1.6/Core/ChronoSaveFiles.cs` | static | The two filesystem questions, over a plain path: list the saves folder, measure a written file. Never calls `GenFilePaths`, which is what makes it testable. |
 | `1.6/Core/ChronoSaveOutcome.cs` | enum + struct | What a finished attempt did, and what follows from it. |
@@ -170,10 +170,24 @@ project decompile number the same file differently.
     place, which is also why the closure's own re-check uses `IgnoringOwnLongEvent()` rather than
     skipping the reading: `UpdateCurrentSynchronousEvent` invokes the action and clears
     `currentEvent` afterwards, so while the closure runs it is still looking at itself.
-17. Cosmetics worth knowing: `ChronoSaveSettings.cs:68-78` never writes the clamp back, so `70` displays
-    with 60 in effect and clearing the field refills it instantly; `TipRegion(listing.GetRect(0f), ...)` at
-    `:85` binds a tooltip to a zero-height rect, translated nine times and never shown; `ModEntry.cs:37`
-    logs "Loaded version 1.0". The per-save `Log.Message` is gated on `Prefs.DevMode` as of #4.
+17. **Fixed 2026-09-17 (#6).** The interval field never wrote its clamp back, so `70` displayed with
+    60 in effect, and it refilled the instant it was cleared so the player could not select all and
+    retype. It is now `Widgets.TextFieldNumeric`, which keeps the buffer and the value apart:
+    `IsPartiallyOrFullyTypedNumber` returns true for the empty string so the buffer is accepted,
+    `IsFullyTypedNumber` returns false for it so nothing refills the field, and a fully typed edit is
+    clamped and written back. The `buffer == null` refill fires on null only, never on empty. The
+    remaining edge, a window closed on an empty field, is settled in `WriteSettings`, which
+    `Dialog_ModSettings.PreClose` calls on every close.
+
+    The slider tooltip bound to `listing.GetRect(0f)`, a zero-height rect that can never be hovered,
+    so nine translations of it had never been seen by anyone. `Listing_Standard.Slider` returns the
+    value rather than the rect, which is why; the rect is now taken first, which is that method
+    inlined, so the layout does not move. **Attaching it made the text visible for the first time**,
+    which is why #1's rewording of `ChronoSave_NumberOfSavesTooltip` had to land first: its claim
+    that the oldest save is overwritten was false until then.
+
+    Still outstanding, for #7 or #8: `ModEntry.cs` logs "Loaded version 1.0" against a `<modVersion>`
+    of 1.0.1. The per-save `Log.Message` is gated on `Prefs.DevMode` as of #4.
 
 ## Defect register
 
