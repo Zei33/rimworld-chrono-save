@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>Création d'une chronosauvegarde...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Chronosauvegarde créée : {0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>La chronosauvegarde {0} est peut-être incomplète. Elle sera écrasée lors de la prochaine tentative.</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>Chrono Save n'enregistre jamais de sauvegarde pour une colonie jouée en Mode Engagement. Ce mode repose sur un fichier de sauvegarde unique, et aucun réglage ne permet de changer cela.</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>Cette colonie est en Mode Engagement. Chrono Save n'enregistre aucune sauvegarde pour elle. Les réglages ci-dessous ne s'appliquent qu'aux colonies qui ne sont pas en Mode Engagement.</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorld enregistre cette colonie dans {0}, qui est l'un des emplacements rotatifs de Chrono Save.</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>Renommer la colonie</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>Donnez un nom à votre colonie pour sortir sa sauvegarde du Mode Engagement des emplacements de Chrono Save. RimWorld enregistrera la colonie sous ce nom et supprimera le fichier d'emplacement qu'elle utilise actuellement. Conserver le nom actuel ne pose aucun problème.</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>Sauvegarde du Mode Engagement menacée</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>Cette colonie a été chargée depuis un fichier Chrono Save, si bien que RimWorld considère désormais {0} comme sa sauvegarde du Mode Engagement et y écrit chaque sauvegarde automatique. Ce nom est l'un des emplacements rotatifs de Chrono Save, et les chronosauvegardes d'une autre colonie peuvent l'écraser.\n\nPour corriger cela, ouvrez Options, puis options de mod, puis Chrono Save, et appuyez sur Renommer la colonie. RimWorld enregistrera la colonie sous son propre nom et supprimera le fichier {0}, exactement comme il le fait lorsqu'une colonie est nommée pour la première fois.\n\nChrono Save n'écrira aucune sauvegarde tant que cette colonie est chargée.</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>Fichiers de sauvegarde restants : {0} ({1} Mo)</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>RimWorld conserve une copie .old chaque fois qu'il écrit une sauvegarde du Mode Engagement par-dessus un fichier existant. Il s'agit d'emplacements de chronosauvegarde écrits alors qu'une colonie en Mode Engagement était chargée. Ils n'apparaissent pas dans le menu Charger une colonie et Chrono Save ne les supprimera pas. Si vous n'en voulez plus, supprimez de ce dossier les fichiers se terminant par .rws.old dont le nom commence par Chronosave :</ChronoSave_StrandedBackupsText>
 </LanguageData>

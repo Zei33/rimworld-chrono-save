@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>Creando cronoguardado...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Cronoguardado creado: {0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>El cronoguardado {0} puede estar incompleto. Se sobrescribirá en el siguiente intento.</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>Chrono Save nunca crea guardados de una colonia jugada en Modo comprometido. Ese modo se basa en un único archivo de guardado, y no hay ninguna opción para cambiarlo.</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>Esta colonia está en Modo comprometido. Chrono Save no está creando ningún guardado para ella. Las opciones de abajo solo se aplican a colonias que no están en Modo comprometido.</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorld está guardando esta colonia en {0}, que es uno de los espacios rotativos de Chrono Save.</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>Renombrar colonia</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>Ponle nombre a tu colonia para sacar su guardado de Modo comprometido de los espacios de Chrono Save. RimWorld guardará la colonia con ese nombre y eliminará el archivo de espacio que está usando ahora. Mantener el nombre actual también está bien.</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>Guardado de Modo comprometido en riesgo</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>Esta colonia se cargó desde un archivo de Chrono Save, así que RimWorld ahora trata {0} como su guardado de Modo comprometido y escribe allí cada autoguardado. Ese nombre es uno de los espacios rotativos de Chrono Save, y los cronoguardados de otra colonia pueden sobrescribirlo.\n\nPara solucionarlo, abre Opciones, luego opciones de mods, luego Chrono Save, y pulsa Renombrar colonia. RimWorld guardará la colonia con su propio nombre y eliminará el archivo {0}, igual que hace cuando una colonia recibe nombre por primera vez.\n\nChrono Save no creará ningún guardado mientras esta colonia esté cargada.</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>Archivos de copia de seguridad sobrantes: {0} ({1} MB)</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>RimWorld conserva una copia .old cada vez que escribe un guardado de Modo comprometido sobre un archivo existente. Estos son espacios de cronoguardado escritos mientras había cargada una colonia en Modo comprometido. No aparecen en el menú Cargar partida y Chrono Save no los eliminará. Si ya no los quieres, borra de esta carpeta los archivos que terminan en .rws.old y cuyo nombre empieza por Chronosave:</ChronoSave_StrandedBackupsText>
 </LanguageData>

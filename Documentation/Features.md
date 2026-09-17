@@ -20,7 +20,7 @@
 - Preserves recent save history without cluttering save folder
 
 ### Mod Settings
-Access through Options > Mod Settings > Chrono Save
+Access through Options, then mod options, then Chrono Save
 
 #### Enable/Disable Toggle
 - Turn the chronosave system on or off
@@ -62,7 +62,21 @@ Access through Options > Mod Settings > Chrono Save
 - Fully compatible with vanilla autosave system
 - Chronosaves appear in standard load game menu
 - Can be loaded like any other save file
-- Separate from permadeath mode restrictions
+- Does nothing while a Commitment mode colony is loaded. That mode is built around a single save
+  file, and any extra copy is a way to roll back, so no chronosaves are written there
+
+#### Commitment mode
+- No chronosaves are written while a colony in Commitment mode is loaded
+- The mod says so once in the log when the colony loads, and in its settings window
+- There is no setting to turn this off. Commitment mode has one save file by design, and every extra
+  copy is a rollback point
+- If an earlier version left a Commitment colony saving into a chronosave slot, the mod sends a
+  letter explaining the fix: Options, then mod options, then Chrono Save, then Rename colony.
+  RimWorld saves the colony under its own name again and removes the slot file, which is what it
+  already does when a colony is first named
+- Backup files RimWorld left behind from those saves are counted in the settings window. The mod
+  never deletes them, because a file of that shape can also be RimWorld's own safety copy for a
+  colony that has nothing to do with this mod
 
 ## Technical Features
 
@@ -106,7 +120,7 @@ Full translations for:
 | Works when paused | No | Yes |
 | Configurable count | Yes | Yes |
 | Separate file names | Yes | Yes |
-| Permadeath override | No | No |
+| Runs in Commitment mode | Yes, overwrites the colony's single save file | No, writes nothing |
 
 ## Future Considerations
 

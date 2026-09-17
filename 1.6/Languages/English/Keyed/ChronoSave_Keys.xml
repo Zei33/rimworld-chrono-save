@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>Creating chronosave...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Chronosave created: {0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>{0} may be incomplete. It will be rewritten on the next attempt.</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>Chrono Save never writes saves for a colony played in Commitment mode. That mode is built around a single save file, and there is no setting to change this.</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>This colony is in Commitment mode. Chrono Save is not writing any saves for it. The settings below only apply to colonies that are not in Commitment mode.</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorld is saving this colony to {0}, which is one of Chrono Save's rotating slots.</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>Rename colony</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>Give your colony a name to move its Commitment save out of Chrono Save's slots. RimWorld will save the colony under that name and remove the slot file it is using now. Keeping the current name is fine.</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>Commitment save at risk</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>This colony was loaded from a Chrono Save file, so RimWorld now treats {0} as its Commitment save and writes every autosave there. That name is one of Chrono Save's rotating slots, and another colony's chronosaves can overwrite it.\n\nTo fix this, open Options, then mod options, then Chrono Save, and press Rename colony. RimWorld will save the colony under its own name and remove the {0} file, the same way it does when a colony is first named.\n\nChrono Save will not write any saves while this colony is loaded.</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>Leftover backup files: {0} ({1} MB)</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>RimWorld keeps a .old copy whenever it writes a Commitment save over an existing file. These are chronosave slots written while a Commitment colony was loaded. They do not appear in the Load menu and Chrono Save will not delete them. If you no longer want them, delete the files ending in .rws.old whose names start with Chronosave from this folder:</ChronoSave_StrandedBackupsText>
 </LanguageData>

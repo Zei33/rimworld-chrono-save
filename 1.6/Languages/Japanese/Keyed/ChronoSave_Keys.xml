@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>クロノセーブを作成中...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>クロノセーブを作成しました：{0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>クロノセーブ {0} は不完全な可能性があります。次回の保存時に上書きされます。</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>クロノセーブは、コミットメントモードでプレイしているコロニーのセーブを一切作成しません。このモードはセーブファイルを1つだけ持つことを前提としており、この動作を変更する設定はありません。</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>このコロニーはコミットメントモードです。クロノセーブはこのコロニーのセーブを作成しません。以下の設定は、コミットメントモードではないコロニーにのみ適用されます。</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorldはこのコロニーを {0} に保存しています。これはクロノセーブが使い回している枠のひとつです。</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>コロニーの名前を変更</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>コロニーに名前を付けると、コミットメントモードのセーブをクロノセーブの枠の外に移せます。RimWorldはその名前でコロニーを保存し、現在使用している枠のファイルを削除します。今の名前のままにしても問題ありません。</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>コミットメントモードのセーブが危険な状態です</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>このコロニーはクロノセーブのファイルから読み込まれたため、RimWorldは現在 {0} をこのコロニーのコミットメントモードのセーブとして扱い、すべてのオートセーブをそこに書き込んでいます。この名前はクロノセーブが使い回している枠のひとつであり、別のコロニーのクロノセーブに上書きされる可能性があります。\n\n解決するには、「オプション」、「MODオプション」、「クロノセーブ」の順に開き、「コロニーの名前を変更」を押してください。RimWorldがコロニー自身の名前で保存し、コロニーに初めて名前を付けたときと同じように {0} のファイルを削除します。\n\nこのコロニーを読み込んでいる間、クロノセーブはセーブを作成しません。</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>残ったバックアップファイル：{0} 個（{1} MB）</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>RimWorldは、既存のファイルに上書きしてコミットメントモードのセーブを書き込むたびに .old のコピーを残します。これらは、コミットメントモードのコロニーを読み込んでいる間に書き込まれたクロノセーブの枠です。ロードメニューには表示されず、クロノセーブがこれらを削除することもありません。不要であれば、名前が Chronosave で始まり .rws.old で終わるファイルを次のフォルダーから削除してください：</ChronoSave_StrandedBackupsText>
 </LanguageData>

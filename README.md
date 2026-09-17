@@ -26,7 +26,7 @@ Chrono Save creates automatic saves based on real-world time rather than in-game
 
 ## Configuration
 
-Access settings through: **Options → Mod Settings → Chrono Save**
+Access settings through **Options**, then **mod options**, then **Chrono Save**.
 
 ### Settings
 

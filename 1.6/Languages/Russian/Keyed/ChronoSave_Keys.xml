@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>Создание хроносохранения...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Хроносохранение создано: {0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>Хроносохранение {0} может быть неполным. Оно будет перезаписано при следующей попытке.</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>Chrono Save никогда не создаёт сохранения для поселения, которое играется в «ответственном» режиме. Этот режим построен вокруг единственного файла сохранения, и изменить это настройками нельзя.</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>Это поселение в «ответственном» режиме. Chrono Save не создаёт для него никаких сохранений. Настройки ниже действуют только для поселений, которые не находятся в «ответственном» режиме.</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorld сохраняет это поселение в файл {0}, а это одна из ячеек, которые Chrono Save использует по кругу.</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>Переименовать поселение</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>Дайте поселению название, чтобы вынести его сохранение «ответственного» режима из ячеек Chrono Save. RimWorld сохранит поселение под этим названием и удалит файл ячейки, которым оно пользуется сейчас. Оставить нынешнее название тоже можно.</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>Сохранение «ответственного» режима под угрозой</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>Это поселение было загружено из файла Chrono Save, поэтому RimWorld теперь считает {0} его сохранением «ответственного» режима и пишет туда каждое автосохранение. Это название является одной из ячеек, которые Chrono Save использует по кругу, и хроносохранения другого поселения могут его перезаписать.\n\nЧтобы это исправить, откройте меню Настройки, затем настройки модов, затем Chrono Save, и нажмите Переименовать поселение. RimWorld сохранит поселение под его собственным названием и удалит файл {0}, так же как он делает это, когда поселение получает название впервые.\n\nПока это поселение загружено, Chrono Save не будет создавать никаких сохранений.</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>Оставшиеся файлы резервных копий: {0} ({1} МБ)</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>RimWorld оставляет копию .old каждый раз, когда записывает сохранение «ответственного» режима поверх существующего файла. Это ячейки хроносохранений, записанные, пока было загружено поселение в «ответственном» режиме. В меню загрузки они не появляются, и Chrono Save их не удаляет. Если они вам больше не нужны, удалите из этой папки файлы, имена которых начинаются с Chronosave и заканчиваются на .rws.old:</ChronoSave_StrandedBackupsText>
 </LanguageData>

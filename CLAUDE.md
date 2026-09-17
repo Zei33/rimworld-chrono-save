@@ -18,9 +18,11 @@ paused, which is the mod's selling point and the source of both live user report
 | `1.6/Core/ChronoSaveFiles.cs` | static | The two filesystem questions, over a plain path: list the saves folder, measure a written file. Never calls `GenFilePaths`, which is what makes it testable. |
 | `1.6/Core/ChronoSaveOutcome.cs` | enum + struct | What a finished attempt did, and what follows from it. |
 | `1.6/Core/SaveFileStamp.cs` | struct | A save file as the rotation sees it: base name and `LastWriteTimeUtc`. |
+| `1.6/Core/StrandedBackups.cs` | static + struct | Counts the `.rws.old` copies Commitment writes left behind. Reports, never deletes. |
+| `1.6/Core/Dialog_RenameColony.cs` | `Dialog_GiveName` | Vanilla's faction naming dialog, opened from the settings window so a rebound Commitment colony can be moved out of a slot. |
 | `Tests/` | NUnit, net472 | Not in the sln, excluded from the mod's compile items. See `Tests/README.md`. |
 | `1.6/Patches/GameComponentInjectionPatch.cs` | Harmony postfix on `Verse.Game.FillComponents` | Unreachable, see trap 9. 42 LOC. |
-| `1.6/Languages/*/Keyed/ChronoSave_Keys.xml` | keyed strings | 12 keys, nine languages, key sets verified identical. |
+| `1.6/Languages/*/Keyed/ChronoSave_Keys.xml` | keyed strings | 21 keys, nine languages, key sets verified identical. |
 
 Per frame: `Root_Play.Update` -> `Current.Game.UpdatePlay()` -> `GameComponentUtility.GameComponentUpdate()`
 -> `ChronoSaveGameComponent.GameComponentUpdate()` (`:80`). `Root_Entry.Update` reaches the same method
@@ -89,11 +91,34 @@ project decompile number the same file differently.
    non-abstract `GameComponent` subclass with `Activator.CreateInstance(type, this)`, and
    `GenTypes.AllActiveAssemblies` includes mod assemblies, so the postfix's `GetComponent<...>() != null`
    guard always returns early. `harmony.PatchAll()` and the `brrainz.harmony` hard dependency buy nothing.
-10. Permadeath is not respected. Nothing consults `Find.GameInfo.permadeathMode`; vanilla's
-    `Autosaver.DoAutosave()` writes `Current.Game.Info.permadeathModeUniqueName` instead of a rotating
-    name, so a Commitment colony silently gains up to 25 rollback points. `SaveGame` also passes
-    `leaveOldFile: permadeathMode` to `SafeSaver.Save`, leaving a `Chronosave-N.rws.old` per slot until
-    that slot is next written. `Features.md` claims the opposite twice.
+10. **Fixed 2026-09-17 (#2).** Nothing consulted `permadeathMode`, so a Commitment colony silently
+    gained up to 25 rollback points in the one mode whose purpose is that you cannot roll back. There
+    is now a gate in `GameComponentUpdate` and a second check inside the queued closure, because the
+    identity check there only rules out the `Game` being *replaced*, not the same game turning out to
+    be a Commitment one. Three findings from that work are worth keeping:
+
+    - **Vanilla 1.6 has no player-facing rename.** `Faction.OfPlayer.Name` has exactly one writer,
+      `NamePlayerFactionDialogUtility.Named`, reached from the one-time prompt (permanently gated on
+      `!HasName`) and a dev-mode action. So "tell the player to rename their colony" was unfollowable
+      advice, and `Dialog_RenameColony` opens vanilla's own dialog instead. The mod writes and deletes
+      nothing itself on that path; `Named` does the autosave and the old-file delete.
+    - **`FinalizeInit` cannot detect a first-load rebind.**
+      `SavedGameLoaderNow.LoadGameFromSaveFileNow` calls
+      `CheckUpdatePermadeathModeUniqueNameOnGameLoad` *after* `LoadGame()` returns, so after both
+      `FinalizeInit` and `LoadedGame`. A check there reads the pre-rebind name and is one session
+      late every time. It runs on the first `Playing` frame instead, which is guaranteed to be after
+      the rebind because loading is an asynchronous long event and `Root_Play.Update` returns before
+      `UpdatePlay` while one is running.
+    - **The English save suffix is `(Permadeath)`, not `Commitment`.** The storyteller screen says
+      "Commitment mode" (`CommitmentMode`) and the filename says `(Permadeath)`
+      (`PermadeathModeSaveSuffix`). Player-facing text uses the first; the second matters only
+      because it is why `IsRingSaveName` must be an exact-shape parser rather than a `StartsWith`: a
+      colony legitimately named `Chronosave-3` has the unique name `Chronosave-3 (Permadeath)`.
+
+    The stranded `Chronosave-N.rws.old` files are counted in the settings window and **never
+    deleted**. `SaveGame` passes `leaveOldFile: permadeathMode`, so each Commitment write left one,
+    and `SafeSaver` only clears it on the next write to that path, which will now never come. They
+    cannot be attributed safely, because the same filename shape is vanilla's own safety copy.
 11. Corrupt writes are not a risk. `SafeSaver.Save` writes `.new`, moves the live file to `.old`, swaps,
     restores from `.old` if the swap fails, then pops `GenUI.ErrorDialog("ProblemSavingFile")`. The mod
     inherits that by routing through the vanilla entry point.
@@ -143,7 +168,7 @@ project decompile number the same file differently.
 | high | No guard for targeting, float menus or paused interactions | `:91` | Save captures a half-finished interaction; neither `Targeter` nor `WorldTargeter` is serialised, so the pending callback cannot be restored |
 | ~~medium~~ | ~~Success message posted even when the save threw~~ | fixed 2026-09-17, #4 | Reporting now happens inside the queued closure, after the write, and after the written file has been measured |
 | ~~medium~~ | ~~Toast is `historical`~~ | fixed 2026-09-17, #5 | Both toasts pass `historical: false` |
-| medium | No permadeath handling, one `.rws.old` per slot there | `:121` | Commitment mode silently gains rollback points |
+| ~~medium~~ | ~~No permadeath handling, one `.rws.old` per slot there~~ | fixed 2026-09-17, #2 | Gated, disclosed, and affected colonies get a letter plus a rename button |
 | medium | Name collision with user saves, orphaned slots when the max is lowered | `ChooseSaveName` | A user file named `Chronosave-3` is still overwritten. Slots above a lowered max no longer rotate but do sit on disk; so do a named colony's files after it is abandoned. Both are visible in the Load list with its own delete button, which is the argument for leaving them |
 | medium | Harmony patch unreachable, dependency unnecessary | `GameComponentInjectionPatch.cs:20` | No runtime failure; a dependency prompt and patch surface for nothing |
 
@@ -192,9 +217,11 @@ dotnet build rimworld-chrono-save.sln -c Release   # clean, zero warnings
   (`:33`), anything reading `Time.realtimeSinceStartup`, all of `GameComponentUpdate`, and every
   Harmony patch, because Harmony cannot patch on this runtime at all. Quote coverage against
   `ChronoSaveSchedule` and `ChronoSaveFiles`, never the repo.
-- **One behaviour has no automated coverage and must be checked in game**: the `savePending` latch of
-  trap 16. Set the interval to one minute and confirm exactly one status box and one written file per
-  minute. A regression there shows up as duplicate saves burning two ring slots per interval.
+- **Two behaviours have no automated coverage and must be checked in game.** The `savePending` latch
+  of trap 16. Set the interval to one minute and confirm exactly one status box and one written file per
+  minute. A regression there shows up as duplicate saves burning two ring slots per interval. And the
+  whole Commitment rename flow: the button, the dialog, the autosave under the new name, the slot file
+  being removed, and the notice disappearing afterwards.
 - In-game: 1.6.4871 only. Set the interval to 1 minute to exercise a rotation quickly. To reproduce the
   entry-screen defect, start a new colony, let world generation finish, then sit on the landing-site page
   past the interval. Use the `refsrc` skill for game API lookups.
@@ -214,3 +241,16 @@ dotnet build rimworld-chrono-save.sln -c Release   # clean, zero warnings
   calls `SteamUGC.SetItemDescription` only inside `if (creating)`, so the in-game uploader cannot
   republish them. Changing store copy needs the Steam website, which is region-blocked from this machine.
   See the `ship-mod` skill before publishing.
+
+## One naming decision worth not re-litigating
+
+The chronosave ring is keyed on **`Faction.OfPlayer.Name`, the player faction's name**, not on the
+settlement name. RimWorld treats those as two separate things: `Dialog_NamePlayerFaction` sets the
+first and `NamePlayerFactionBaseMessage` names the second, and several vanilla translations use a
+clearly different word for them (German "Fraktion", Russian "фракция", Polish "frakcja").
+
+The faction is the right key, because it is the identity that persists across a whole playthrough
+including a move to a different settlement. But the mod's own user-facing strings say "colony" in all
+nine languages, because that is what players call it and it is what the single naming prompt reads as
+in play. The gap is real and known: a player who renames only their settlement will not see the
+filenames change. It has not been judged worth two more strings to explain.

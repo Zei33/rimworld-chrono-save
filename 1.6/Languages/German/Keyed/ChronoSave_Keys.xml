@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>Erstelle Chronospeicherung...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Chronospeicherung erstellt: {0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>Die Chronospeicherung {0} ist möglicherweise unvollständig. Sie wird beim nächsten Versuch überschrieben.</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>Chrono Save schreibt niemals Speicherstände für eine Kolonie, die im Hardcore-Modus gespielt wird. Dieser Modus ist auf eine einzige Speicherdatei ausgelegt, und es gibt keine Einstellung, um das zu ändern.</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>Diese Kolonie ist im Hardcore-Modus. Chrono Save schreibt keine Speicherstände für sie. Die Einstellungen unten gelten nur für Kolonien, die nicht im Hardcore-Modus sind.</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorld speichert diese Kolonie in {0}, und das ist einer der rotierenden Plätze von Chrono Save.</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>Kolonie umbenennen</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>Gib deiner Kolonie einen Namen, um ihre Hardcore-Speicherung aus den Plätzen von Chrono Save herauszuholen. RimWorld speichert die Kolonie unter diesem Namen und entfernt die Platzdatei, die sie gerade benutzt. Den aktuellen Namen zu behalten ist ebenfalls in Ordnung.</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>Hardcore-Speicherung in Gefahr</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>Diese Kolonie wurde aus einer Chrono-Save-Datei geladen, daher behandelt RimWorld {0} jetzt als ihre Hardcore-Speicherung und schreibt jede automatische Speicherung dorthin. Dieser Name ist einer der rotierenden Plätze von Chrono Save, und die Chronospeicherungen einer anderen Kolonie können ihn überschreiben.\n\nUm das zu beheben, öffne Optionen, dann Mod-Optionen, dann Chrono Save, und drücke auf Kolonie umbenennen. RimWorld speichert die Kolonie dann unter ihrem eigenen Namen und entfernt die Datei {0}, genauso wie beim ersten Benennen einer Kolonie.\n\nChrono Save schreibt keine Speicherstände, solange diese Kolonie geladen ist.</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>Übrig gebliebene Sicherungsdateien: {0} ({1} MB)</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>RimWorld behält eine .old-Kopie, wenn es eine Hardcore-Speicherung über eine vorhandene Datei schreibt. Dies sind Chronospeicherungs-Plätze, die geschrieben wurden, während eine Hardcore-Kolonie geladen war. Sie erscheinen nicht im Menü Spiel laden und Chrono Save löscht sie nicht. Wenn du sie nicht mehr brauchst, lösche aus diesem Ordner die Dateien, die auf .rws.old enden und deren Name mit Chronosave beginnt:</ChronoSave_StrandedBackupsText>
 </LanguageData>

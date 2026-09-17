@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>Tworzenie chronozapisu...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Utworzono chronozapis: {0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>Chronozapis {0} może być niekompletny. Zostanie nadpisany przy następnej próbie.</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>Chrono Save nigdy nie tworzy zapisów dla kolonii prowadzonej w trybie zobowiązania. Ten tryb opiera się na jednym pliku zapisu i nie ma ustawienia, które by to zmieniło.</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>Ta kolonia jest w trybie zobowiązania. Chrono Save nie tworzy dla niej żadnych zapisów. Poniższe ustawienia dotyczą wyłącznie kolonii, które nie są w trybie zobowiązania.</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorld zapisuje tę kolonię do pliku {0}, który jest jednym z rotacyjnych miejsc Chrono Save.</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>Zmień nazwę kolonii</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>Nadaj kolonii nazwę, aby przenieść jej zapis trybu zobowiązania poza miejsca Chrono Save. RimWorld zapisze kolonię pod tą nazwą i usunie plik miejsca, z którego korzysta teraz. Pozostawienie obecnej nazwy również jest w porządku.</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>Zagrożony zapis trybu zobowiązania</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>Ta kolonia została wczytana z pliku Chrono Save, więc RimWorld traktuje teraz {0} jako jej zapis trybu zobowiązania i zapisuje tam każdy autozapis. Ta nazwa jest jednym z rotacyjnych miejsc Chrono Save, a chronozapisy innej kolonii mogą ją nadpisać.\n\nAby to naprawić, otwórz Opcje, następnie ustawienia modyfikacji, następnie Chrono Save, i naciśnij Zmień nazwę kolonii. RimWorld zapisze kolonię pod jej własną nazwą i usunie plik {0}, tak samo jak przy pierwszym nadaniu nazwy kolonii.\n\nChrono Save nie będzie tworzyć żadnych zapisów, dopóki ta kolonia jest wczytana.</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>Pozostałe pliki kopii zapasowych: {0} ({1} MB)</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>RimWorld zachowuje kopię .old za każdym razem, gdy nadpisuje istniejący plik zapisem trybu zobowiązania. To są miejsca chronozapisów zapisane wtedy, gdy wczytana była kolonia w trybie zobowiązania. Nie pojawiają się w menu Wczytaj i Chrono Save ich nie usunie. Jeśli nie są ci już potrzebne, usuń z tego folderu pliki kończące się na .rws.old, których nazwa zaczyna się od Chronosave:</ChronoSave_StrandedBackupsText>
 </LanguageData>

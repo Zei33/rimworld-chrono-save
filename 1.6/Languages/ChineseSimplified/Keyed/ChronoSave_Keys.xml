@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>正在创建实时存档...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>实时存档已创建：{0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>实时存档 {0} 可能不完整，将在下次保存时被覆盖。</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>实时存档不会为处于硬核模式的殖民地创建任何存档。该模式的核心就是只保留一个存档文件，因此没有可以更改此行为的设置。</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>本殖民地处于硬核模式，实时存档不会为它创建任何存档。下方的设置仅适用于非硬核模式的殖民地。</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>RimWorld 正在将本殖民地保存到 {0}，而这是实时存档轮换使用的存档位之一。</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>重命名殖民地</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>为殖民地取一个名字，即可将它的硬核模式存档移出实时存档的存档位。RimWorld 会以该名称保存殖民地，并删除它当前占用的存档位文件。保留现在的名字也没有问题。</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>硬核模式存档有风险</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>本殖民地是从实时存档的文件中载入的，因此 RimWorld 现在把 {0} 当作它的硬核模式存档，并将每次自动保存都写入该文件。这个名称是实时存档轮换使用的存档位之一，其他殖民地的实时存档可能会将其覆盖。\n\n要解决这个问题，请依次打开选项、mod选项、实时存档，然后按下重命名殖民地。RimWorld 会以殖民地自己的名称保存，并删除 {0} 文件，就像殖民地首次命名时那样。\n\n只要本殖民地处于载入状态，实时存档就不会创建任何存档。</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>残留的备份文件：{0} 个（{1} MB）</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>每当 RimWorld 将硬核模式存档覆盖写入已存在的文件时，都会保留一份 .old 备份。这些文件是在载入硬核模式殖民地期间写入的实时存档存档位。它们不会出现在载入菜单中，实时存档也不会删除它们。如果你不再需要，请从以下文件夹中删除以 Chronosave 开头、以 .rws.old 结尾的文件：</ChronoSave_StrandedBackupsText>
 </LanguageData>

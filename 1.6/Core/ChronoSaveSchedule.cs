@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace ChronoSave.Core
@@ -134,7 +135,7 @@ namespace ChronoSave.Core
 
             foreach (var character in colonyNameOrNull)
             {
-                if (character < ' ' || character == '' || InvalidKeyCharacters.IndexOf(character) >= 0)
+                if (character < ' ' || character == '\u007f' || InvalidKeyCharacters.IndexOf(character) >= 0)
                 {
                     // Matches Verse.GenText.SanitizeFilename, which joins the surviving runs with an
                     // underscore rather than closing the gap, so "Ridge/Hold" stays two words.
@@ -290,6 +291,130 @@ namespace ChronoSave.Core
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Reads the slot number out of a chronosave filename.
+        /// </summary>
+        /// <param name="saveName">The name to parse, without a directory or an extension.</param>
+        /// <param name="slot">The slot, when the name is one this mod would write.</param>
+        /// <returns><c>true</c> when the name belongs to a chronosave ring.</returns>
+        /// <remarks>
+        /// The counterpart to <see cref="SaveNameForSlot(string, int)"/> and must be changed with it;
+        /// <c>IsRingSaveName_RoundTripsTheGenerator</c> fails if only one of the two is touched.
+        /// Both shapes are accepted and the flat one must stay accepted forever, because it is what
+        /// every install wrote before 2026-09-17 and those files, and the permadeath rebinds they
+        /// caused, will keep turning up for years.
+        ///
+        /// Matching is deliberately exact rather than a prefix test. A colony a player legitimately
+        /// named after this mod has a permadeath save called <c>Chronosave-3 (Permadeath)</c>, since
+        /// both vanilla generators end with <c>AppendedPermadeathModeSuffix</c>, and a
+        /// <c>StartsWith</c> would claim it.
+        /// </remarks>
+        public static bool TryParseRingSlot(string saveName, out int slot)
+        {
+            slot = 0;
+
+            if (string.IsNullOrEmpty(saveName) || saveName.Length <= SaveNamePrefix.Length)
+            {
+                return false;
+            }
+
+            if (!saveName.StartsWith(SaveNamePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var remainder = saveName.Substring(SaveNamePrefix.Length);
+            var lastDash = remainder.LastIndexOf('-');
+
+            if (lastDash >= 0)
+            {
+                // A colony key, which must be there rather than empty.
+                if (lastDash == 0)
+                {
+                    return false;
+                }
+
+                remainder = remainder.Substring(lastDash + 1);
+            }
+
+            if (!int.TryParse(remainder, NumberStyles.None, CultureInfo.InvariantCulture, out slot))
+            {
+                return false;
+            }
+
+            // Rejects a padded slot such as "03", which this mod never writes, so a file named that
+            // way is the player's own.
+            if (!string.Equals(remainder, slot.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal))
+            {
+                slot = 0;
+                return false;
+            }
+
+            if (slot < 1 || slot > MaxSlots)
+            {
+                slot = 0;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Decides whether a save name is one this mod writes.
+        /// </summary>
+        /// <param name="saveName">The name to check.</param>
+        /// <returns><c>true</c> when the name belongs to a chronosave ring.</returns>
+        public static bool IsRingSaveName(string saveName)
+        {
+            return TryParseRingSlot(saveName, out _);
+        }
+
+        /// <summary>
+        /// Decides whether a Commitment colony needs to be told its save has been bound into this
+        /// mod's rotation.
+        /// </summary>
+        /// <param name="permadeathMode">Whether the colony is in Commitment mode.</param>
+        /// <param name="permadeathUniqueName">The colony's permadeath save name.</param>
+        /// <param name="alreadyWarnedFor">The name already warned about, or <c>null</c>.</param>
+        /// <returns><c>true</c> when a warning is owed.</returns>
+        /// <remarks>
+        /// Loading a chronosave rebinds the colony:
+        /// <c>SavedGameLoaderNow.LoadGameFromSaveFileNow</c> unconditionally calls
+        /// <c>PermadeathModeUtility.CheckUpdatePermadeathModeUniqueNameOnGameLoad</c>, which sets
+        /// <c>permadeathModeUniqueName</c> to the filename with nothing but a dev-log warning. Every
+        /// autosave and both save-and-quit paths then write the colony into a slot this mod recycles.
+        ///
+        /// Keyed on the name rather than a flag, so a later rebind into a different slot warns again
+        /// while reloading the same colony does not.
+        /// </remarks>
+        public static bool NeedsRebindWarning(bool permadeathMode, string permadeathUniqueName, string alreadyWarnedFor)
+        {
+            return permadeathMode
+                   && IsRingSaveName(permadeathUniqueName)
+                   && !string.Equals(permadeathUniqueName, alreadyWarnedFor, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// How long the settings window keeps its count of leftover backup files before recounting.
+        /// </summary>
+        public const float BackupRescanIntervalSeconds = 5f;
+
+        /// <summary>
+        /// Decides whether the settings window should recount the leftover backup files.
+        /// </summary>
+        /// <param name="lastScanRealTime">Real time of the previous count.</param>
+        /// <param name="nowRealTime">Real time now.</param>
+        /// <returns><c>true</c> when it is time to count again.</returns>
+        /// <remarks>
+        /// The settings window redraws every frame, so the directory listing needs a rate limit. A
+        /// few seconds is short enough that a player deleting files in Finder sees the number drop
+        /// without reopening the window.
+        /// </remarks>
+        public static bool ShouldRescanBackups(float lastScanRealTime, float nowRealTime)
+        {
+            return nowRealTime - lastScanRealTime >= BackupRescanIntervalSeconds;
         }
 
         /// <summary>

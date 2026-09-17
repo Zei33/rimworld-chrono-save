@@ -56,6 +56,34 @@ namespace ChronoSave.Core
         private long lastGoodSaveBytes;
 
         /// <summary>
+        /// Whether the Commitment rebind check still has to run this session.
+        /// </summary>
+        /// <remarks>
+        /// Not scribed, and consumed exactly once per component lifetime.
+        ///
+        /// The check cannot live in <c>FinalizeInit</c>, which is the obvious place and is wrong.
+        /// <c>SavedGameLoaderNow.LoadGameFromSaveFileNow</c> calls
+        /// <c>PermadeathModeUtility.CheckUpdatePermadeathModeUniqueNameOnGameLoad</c> after
+        /// <c>LoadGame()</c> returns, which is after both <c>FinalizeInit</c> and
+        /// <c>LoadedGame</c>. On the load that does the damage the XML still holds the colony's
+        /// original name, so a check at <c>FinalizeInit</c> sees nothing wrong and is one session
+        /// late, every time. The first frame in <c>ProgramState.Playing</c> is guaranteed to be
+        /// after the rebind, because loading runs as an asynchronous long event and
+        /// <c>Root_Play.Update</c> returns before <c>UpdatePlay</c> while one of those is running.
+        /// </remarks>
+        private bool rebindCheckPending = true;
+
+        /// <summary>
+        /// The permadeath save name already warned about, or <c>null</c>.
+        /// </summary>
+        /// <remarks>
+        /// Scribed, unlike the other flags here, so the warning does not repeat on every load of an
+        /// affected colony. Keyed on the name rather than a boolean, so a later rebind into a
+        /// different slot warns again.
+        /// </remarks>
+        private string rebindWarningIssuedFor;
+
+        /// <summary>
         /// Gets the mod settings instance.
         /// </summary>
         private ChronoSaveSettings Settings => ChronoSaveMod.Settings;
@@ -81,6 +109,14 @@ namespace ChronoSave.Core
                 lastSaveRealTime = Time.realtimeSinceStartup;
                 hasInitialized = true;
                 Log.Message($"[Chrono Save] Initialized. Next save in {Settings.SaveIntervalMinutes} minutes.");
+            }
+
+            // Outside the block above, deliberately. hasInitialized is scribed, so on a loaded game
+            // it is already true and anything inside that branch never runs again.
+            GameInfo info = Current.Game != null ? Current.Game.Info : null;
+            if (info != null && info.permadeathMode)
+            {
+                Log.Message("[Chrono Save] This colony is in Commitment mode. Chrono Save will not write any saves while it is loaded.");
             }
         }
         
@@ -129,7 +165,40 @@ namespace ChronoSave.Core
             {
                 return;
             }
-            
+
+            GameInfo info = Current.Game.Info;
+            if (info == null)
+            {
+                // Cannot tell whether this is a Commitment colony, so do not write. A game with no
+                // info is already broken: vanilla's own Autosaver.AutosaveIntervalDays throws on the
+                // first tick in that state.
+                return;
+            }
+
+            if (rebindCheckPending)
+            {
+                // Before the gate below, so it still runs for the colonies it is about to protect.
+                rebindCheckPending = false;
+                WarnIfCommitmentSaveIsBoundToASlot(info);
+            }
+
+            // Commitment mode is built around there being exactly one save file, and every extra
+            // copy is a way to roll back. Writing a rotating ring of up to 25 of them is the one
+            // thing that mode exists to prevent, so the mod does nothing here.
+            //
+            // Not a setting. An opt-out labelled "save in Commitment mode" is the same defect with a
+            // consent checkbox, and the mod could not honour it safely anyway while slot names are
+            // shared. The player is told instead, in the log at FinalizeInit and in the settings
+            // window.
+            //
+            // This returns before lastSaveRealTime is touched, like every other guard here, which
+            // normally means the save is deferred rather than cancelled. Harmless in this case:
+            // permadeathMode never changes within a game, so the deferred save never fires.
+            if (info.permadeathMode)
+            {
+                return;
+            }
+
             // A chronosave is queued and has not run yet. See the remarks on savePending: this
             // method keeps firing while the event waits, and the interval condition is still true.
             //
@@ -225,6 +294,16 @@ namespace ChronoSave.Core
                             return;
                         }
 
+                        // The same game object can still have become a Commitment colony's, because
+                        // the identity check above only rules out replacement. Cheap, and the cost
+                        // of being wrong is a rollback point in the one mode that forbids them.
+                        if (Current.Game.Info == null || Current.Game.Info.permadeathMode)
+                        {
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, null,
+                                "a Commitment colony is loaded");
+                            return;
+                        }
+
                         // The name is chosen here, not at queue time, and that placement is the
                         // point of the fix. It reads the faction and the saves folder from the same
                         // Game that is about to be serialised, it sees any manual save, vanilla
@@ -270,6 +349,42 @@ namespace ChronoSave.Core
             {
                 Log.Error($"[Chrono Save] Failed to queue a chronosave: {ex}");
             }
+        }
+
+        /// <summary>
+        /// Tells the player once when RimWorld is saving a Commitment colony into a chronosave slot.
+        /// </summary>
+        /// <param name="info">The loaded game's info.</param>
+        /// <remarks>
+        /// Loading a chronosave rebinds the colony to it.
+        /// <c>SavedGameLoaderNow.LoadGameFromSaveFileNow</c> unconditionally calls
+        /// <c>CheckUpdatePermadeathModeUniqueNameOnGameLoad</c>, which sets
+        /// <c>permadeathModeUniqueName</c> to the filename it was loaded from and says so only in a
+        /// dev-log warning. Every autosave and both save-and-quit paths then write the colony into a
+        /// slot this mod recycles.
+        ///
+        /// A letter rather than a toast or a log line. A <c>Log.Warning</c> is invisible to a normal
+        /// player, a message lasts about thirteen seconds and cannot hold instructions, and a modal
+        /// dialog during loading gets dismissed reflexively by someone who alt-tabbed. A letter sits
+        /// on the right edge until it is read, is scribed with the letter stack so it survives the
+        /// save-and-quit that is Commitment mode's only exit, and moves to the History tab when
+        /// dismissed.
+        /// </remarks>
+        private void WarnIfCommitmentSaveIsBoundToASlot(GameInfo info)
+        {
+            if (!ChronoSaveSchedule.NeedsRebindWarning(info.permadeathMode, info.permadeathModeUniqueName, rebindWarningIssuedFor))
+            {
+                return;
+            }
+
+            rebindWarningIssuedFor = info.permadeathModeUniqueName;
+
+            Find.LetterStack.ReceiveLetter(
+                "ChronoSave_RebindLetterLabel".Translate(),
+                "ChronoSave_RebindLetterText".Translate(info.permadeathModeUniqueName),
+                LetterDefOf.NegativeEvent);
+
+            Log.Warning($"[Chrono Save] This Commitment colony is saving to {info.permadeathModeUniqueName}, which is one of this mod's rotating slots.");
         }
 
         /// <summary>
@@ -413,6 +528,7 @@ namespace ChronoSave.Core
             base.ExposeData();
 
             Scribe_Values.Look(ref hasInitialized, "hasInitialized", false);
+            Scribe_Values.Look(ref rebindWarningIssuedFor, "rebindWarningIssuedFor");
         }
     }
 }

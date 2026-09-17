@@ -123,8 +123,8 @@ namespace ChronoSave.Tests
         [Test]
         public void RingKey_StripsControlCharacters()
         {
-            Assert.That(ChronoSaveSchedule.RingKeyFromColonyName("FooBar"), Is.EqualTo("Foo_Bar"));
-            Assert.That(ChronoSaveSchedule.RingKeyFromColonyName("FooBar"), Is.EqualTo("Foo_Bar"));
+            Assert.That(ChronoSaveSchedule.RingKeyFromColonyName("Foo\u0001\u001fBar"), Is.EqualTo("Foo_Bar"));
+            Assert.That(ChronoSaveSchedule.RingKeyFromColonyName("Foo\u007fBar"), Is.EqualTo("Foo_Bar"));
         }
 
         [Test]

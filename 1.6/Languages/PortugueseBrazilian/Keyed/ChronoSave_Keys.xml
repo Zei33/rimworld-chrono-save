@@ -21,4 +21,15 @@
   <ChronoSave_SavingMessage>Criando cronossave...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Cronossave criado: {0}</ChronoSave_SavedMessage>
   <ChronoSave_SaveFailedMessage>O cronossave {0} pode estar incompleto. Ele será sobrescrito na próxima tentativa.</ChronoSave_SaveFailedMessage>
+  
+  <!-- Commitment mode -->
+  <ChronoSave_PermadeathInfo>O Chrono Save nunca grava saves de uma colônia jogada no modo Morte Permanente. Esse modo é construído em torno de um único arquivo de save, e não há configuração que mude isso.</ChronoSave_PermadeathInfo>
+  <ChronoSave_PermadeathActiveNotice>Esta colônia está no modo Morte Permanente. O Chrono Save não está gravando nenhum save para ela. As configurações abaixo só valem para colônias que não estão no modo Morte Permanente.</ChronoSave_PermadeathActiveNotice>
+  <ChronoSave_RebindNotice>O RimWorld está salvando esta colônia em {0}, que é um dos espaços rotativos do Chrono Save.</ChronoSave_RebindNotice>
+  <ChronoSave_RenameColonyButton>Renomear colônia</ChronoSave_RenameColonyButton>
+  <ChronoSave_RenameColonyMessage>Dê um nome à sua colônia para tirar o save de Morte Permanente dos espaços do Chrono Save. O RimWorld vai salvar a colônia com esse nome e remover o arquivo de espaço que ela usa agora. Manter o nome atual também está tudo bem.</ChronoSave_RenameColonyMessage>
+  <ChronoSave_RebindLetterLabel>Save de Morte Permanente em risco</ChronoSave_RebindLetterLabel>
+  <ChronoSave_RebindLetterText>Esta colônia foi carregada de um arquivo do Chrono Save, então o RimWorld agora trata {0} como o save de Morte Permanente dela e grava todo salvamento automático ali. Esse nome é um dos espaços rotativos do Chrono Save, e os cronossaves de outra colônia podem sobrescrevê-lo.\n\nPara corrigir isso, abra Opções, depois opções de mods, depois Chrono Save, e pressione Renomear colônia. O RimWorld vai salvar a colônia com o nome dela e remover o arquivo {0}, do mesmo jeito que faz quando uma colônia recebe nome pela primeira vez.\n\nO Chrono Save não vai gravar nenhum save enquanto esta colônia estiver carregada.</ChronoSave_RebindLetterText>
+  <ChronoSave_StrandedBackupsLabel>Arquivos de backup restantes: {0} ({1} MB)</ChronoSave_StrandedBackupsLabel>
+  <ChronoSave_StrandedBackupsText>O RimWorld guarda uma cópia .old sempre que grava um save de Morte Permanente por cima de um arquivo existente. Estes são espaços de cronossave gravados enquanto uma colônia de Morte Permanente estava carregada. Eles não aparecem no menu Carregar Jogo e o Chrono Save não vai apagá-los. Se você não quiser mais esses arquivos, apague desta pasta os que terminam em .rws.old e cujo nome começa com Chronosave:</ChronoSave_StrandedBackupsText>
 </LanguageData>
