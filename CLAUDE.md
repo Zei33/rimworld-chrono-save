@@ -14,6 +14,8 @@ paused, which is the mod's selling point and the source of both live user report
 | `1.6/ModEntry.cs` | `ChronoSaveMod : Mod` | Holds the static `Settings`, calls `harmony.PatchAll()` with id `com.zei33.chronosave`, delegates the settings window. 55 LOC. |
 | `1.6/Core/ChronoSaveGameComponent.cs` | `ChronoSaveGameComponent : GameComponent` | All scheduling and saving. 207 LOC. |
 | `1.6/Core/ChronoSaveSettings.cs` | `ChronoSaveSettings : ModSettings` | Three settings plus the IMGUI page. 118 LOC. |
+| `1.6/Core/ChronoSaveSchedule.cs` | static | The scheduling arithmetic, extracted 2026-09-17 so it can be tested without the game. No game state. |
+| `Tests/` | NUnit, net472 | Not in the sln, excluded from the mod's compile items. See `Tests/README.md`. |
 | `1.6/Patches/GameComponentInjectionPatch.cs` | Harmony postfix on `Verse.Game.FillComponents` | Unreachable, see trap 9. 42 LOC. |
 | `1.6/Languages/*/Keyed/ChronoSave_Keys.xml` | keyed strings | 11 keys, nine languages, key sets verified identical. |
 
@@ -137,11 +139,18 @@ dotnet build rimworld-chrono-save.sln -c Release   # clean, zero warnings
   `ChronoSave.csproj` now carries a real HintPath, so a new warning is a real regression.
 - `./build.sh` builds Release then deletes and replaces `$RimWorldDir/Mods/ChronoSave`. Destructive, so
   never run it to check something.
-- No test project; the sln holds only `ChronoSave.csproj`. This is the cheapest repo in the workspace to
-  stand one up against, because the only thing stopping `ChronoSaveGameComponent` from being constructed
-  in a test is the static `ChronoSaveMod.Settings` (`:33`); the constructor ignores its `Game` argument
-  entirely. Extract `ShouldSave`, `NextIndex`/`NameForIndex` and `ParseInterval` as pure statics over an
-  injected settings object first; the dossier's testability section lists the seams.
+- Tests: `dotnet test Tests/ChronoSave.Tests.csproj`, 18 passing as of 2026-09-17, against the real
+  `Assembly-CSharp.dll`. Deliberately outside `rimworld-chrono-save.sln` so the solution build stays
+  mod-only and warning-free, and `Compile Remove="Tests/**"` in `ChronoSave.csproj` keeps the test
+  sources out of the shipped DLL. `Tests/README.md` has the detail.
+- The seam is `ChronoSaveSchedule`: `IsDue`, `SaveNameForSlot`, `SlotInRange`, `AdvanceSlot` and
+  `SanitiseLoadedSlot`, all pure. The extraction preserved behaviour exactly, including the mutation
+  `GetNextChronoSaveName` performs on `currentSaveIndex`, so trap 15 still holds and the rotation
+  policy still lives in two places. `chrono-save#4` and `#1` land here.
+- Still out of reach, and not a harness defect: anything reading the static `ChronoSaveMod.Settings`
+  (`:33`), anything reading `Time.realtimeSinceStartup`, all of `GameComponentUpdate`, and every
+  Harmony patch, because Harmony cannot patch on this runtime at all. Quote coverage against
+  `ChronoSaveSchedule`, never the repo.
 - In-game: 1.6.4871 only. Set the interval to 1 minute to exercise a rotation quickly. To reproduce the
   entry-screen defect, start a new colony, let world generation finish, then sit on the landing-site page
   past the interval. Use the `refsrc` skill for game API lookups.

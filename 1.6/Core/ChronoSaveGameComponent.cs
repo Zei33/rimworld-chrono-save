@@ -109,11 +109,7 @@ namespace ChronoSave.Core
             }
             
             // Check if enough real time has passed
-            float currentRealTime = Time.realtimeSinceStartup;
-            float timeSinceLastSave = currentRealTime - lastSaveRealTime;
-            float intervalInSeconds = Settings.SaveIntervalMinutes * 60f;
-            
-            if (timeSinceLastSave >= intervalInSeconds)
+            if (ChronoSaveSchedule.IsDue(lastSaveRealTime, Time.realtimeSinceStartup, Settings.SaveIntervalMinutes))
             {
                 PerformChronoSave();
             }
@@ -165,11 +161,7 @@ namespace ChronoSave.Core
                 
                 // Update tracking variables
                 lastSaveRealTime = Time.realtimeSinceStartup;
-                currentSaveIndex++;
-                if (currentSaveIndex > Settings.NumberOfSaves)
-                {
-                    currentSaveIndex = 1;
-                }
+                currentSaveIndex = ChronoSaveSchedule.AdvanceSlot(currentSaveIndex, Settings.NumberOfSaves);
                 
                 Log.Message($"[Chrono Save] Saved game as {saveName}. Next save in {Settings.SaveIntervalMinutes} minutes.");
             }
@@ -184,22 +176,11 @@ namespace ChronoSave.Core
         /// </summary>
         private string GetNextChronoSaveName()
         {
-            // Find the next available index, handling cases where settings changed
-            for (int i = 0; i < Settings.NumberOfSaves; i++)
-            {
-                string testName = $"Chronosave-{currentSaveIndex}";
-                
-                // If we're within our configured range, use this index
-                if (currentSaveIndex <= Settings.NumberOfSaves)
-                {
-                    return testName;
-                }
-                
-                // Otherwise, wrap around
-                currentSaveIndex = 1;
-            }
-            
-            return $"Chronosave-{currentSaveIndex}";
+            // Lowering NumberOfSaves can leave the stored slot above the new limit, so bring it back
+            // into range first. The loop this replaced did the same thing the long way round: it
+            // returned on its first iteration in every case bar that one.
+            currentSaveIndex = ChronoSaveSchedule.SlotInRange(currentSaveIndex, Settings.NumberOfSaves);
+            return ChronoSaveSchedule.SaveNameForSlot(currentSaveIndex);
         }
         
         /// <summary>
@@ -226,10 +207,7 @@ namespace ChronoSave.Core
             // Validate loaded values
             if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
-                if (currentSaveIndex < 1 || currentSaveIndex > 25)
-                {
-                    currentSaveIndex = 1;
-                }
+                currentSaveIndex = ChronoSaveSchedule.SanitiseLoadedSlot(currentSaveIndex);
             }
         }
     }
