@@ -17,6 +17,7 @@ paused, which is the mod's selling point and the source of both live user report
 | `1.6/Core/ChronoSaveSchedule.cs` | static | Every scheduling decision that can be stated over plain values, so it can be tested without the game. No game state. |
 | `1.6/Core/ChronoSaveFiles.cs` | static | The two filesystem questions, over a plain path: list the saves folder, measure a written file. Never calls `GenFilePaths`, which is what makes it testable. |
 | `1.6/Core/ChronoSaveOutcome.cs` | enum + struct | What a finished attempt did, and what follows from it. |
+| `1.6/Core/ChronoSaveConditions.cs` | enum + struct | One frame's readings of the game state a save depends on, and the reasons it can be held back. |
 | `1.6/Core/SaveFileStamp.cs` | struct | A save file as the rotation sees it: base name and `LastWriteTimeUtc`. |
 | `1.6/Core/StrandedBackups.cs` | static + struct | Counts the `.rws.old` copies Commitment writes left behind. Reports, never deletes. |
 | `1.6/Core/Dialog_RenameColony.cs` | `Dialog_GiveName` | Vanilla's faction naming dialog, opened from the settings window so a rebound Commitment colony can be moved out of a slot. |
@@ -53,7 +54,16 @@ project decompile number the same file differently.
    `Find.WindowStack.WindowsPreventSave` and `WorldComponent_GravshipController.CutsceneInProgress`. Not
    `Find.Targeter`, `Find.WorldTargeter` or `Find.WorldRoutePlanner`, not float menus, not pause. Only
    `Dialog_ChooseThingsForNewColony` and `Dialog_ConfigureIdeo` set `preventSave`, and
-   `Page_SelectStartingSite` sets `absorbInputAroundWindow = false` and never sets it.
+   `Page_SelectStartingSite` sets `absorbInputAroundWindow = false` and never sets it. Since #3 the
+   mod supplements it with its own readings rather than relying on it; see `ChronoSaveConditions`.
+
+   **Three different screens are called "the landing site" and they are not the same defect.** The
+   new-game one is `Page_SelectStartingSite`, a `Page` in `ProgramState.Entry`, covered by the
+   `ProgramState` gate. The gravship or move-colony one is `TilePicker`, covered by
+   `SavingIsTemporarilyDisabled`. The shuttle or transport-pod destination pick is `WorldTargeter`
+   (`CompLaunchable.StartChoosingDestination` ends in `Find.WorldTargeter.BeginTargeting`) and was
+   covered by nothing at all. Conflating the first and the third is what would have closed #3 as
+   already fixed.
 4. Vanilla needs no more than that because `Autosaver.AutosaverTick()` is reached only from
    `TickManager.DoSingleTick()`, which does not run while paused. This mod removes that invariant
    deliberately and does not replace it.
@@ -148,12 +158,18 @@ project decompile number the same file differently.
     `canEverUseStandardWindow && !doAsynchronously && eventActionEnumerator == null`, which this
     mod's call satisfies. So `Root_Play.Update` keeps calling `UpdatePlay`, `GameComponentUpdate`
     keeps firing in the frames between queueing a save and the save running, and the interval
-    condition is still true in those frames. Anything that resets the timer must therefore either
-    run at queue time or be paired with a latch. #4 moved the reset into the closure, so the latch
-    (`savePending`) is what stops a second save being queued one frame after the first. It is
-    cleared in a `finally`, and `GameComponentUpdate` additionally clears it when
-    `!LongEventHandler.AnyEventNowOrWaiting`, because `GenScene.GoToMainMenu` calls
-    `ClearQueuedEvents()` before disposing the game and the closure's `finally` never runs then.
+    condition is still true in those frames. #4 moved the timer reset into the closure, which made
+    that a live duplicate-save hazard rather than a curiosity.
+
+    It is handled by the `LongEventPending` reading in the condition set, not by a latch of its own.
+    A short-lived `savePending` flag was written for #4 and deleted again in #3, because
+    `LongEventHandler.AnyEventNowOrWaiting` covers strictly more (any long event, not just this
+    mod's) and needs no watchdog: if an event is dropped, `GenScene.GoToMainMenu` being the vanilla
+    path that does it, the reading simply goes false and the timer was never written, so the save
+    re-queues on the next clear frame. **Do not add a second mechanism for this.** One invariant, one
+    place, which is also why the closure's own re-check uses `IgnoringOwnLongEvent()` rather than
+    skipping the reading: `UpdateCurrentSynchronousEvent` invokes the action and clears
+    `currentEvent` afterwards, so while the closure runs it is still looking at itself.
 17. Cosmetics worth knowing: `ChronoSaveSettings.cs:68-78` never writes the clamp back, so `70` displays
     with 60 in effect and clearing the field refills it instantly; `TipRegion(listing.GetRect(0f), ...)` at
     `:85` binds a tooltip to a zero-height rect, translated nine times and never shown; `ModEntry.cs:37`
@@ -165,7 +181,7 @@ project decompile number the same file differently.
 |---|---|---|---|
 | critical | Saves fire on the pre-game entry screens | `ChronoSaveGameComponent.cs:85` | `Game.ExposeData` -> `Find.CameraDriver.Expose()` NREs (the entry scene nulls `cameraDriverInt`): red error plus a modal ProblemSavingFile dialog every interval, slot burned, success toast still posted |
 | ~~high~~ | ~~Rotation is a serialised counter, not oldest-first~~ | fixed 2026-09-17, #1 | The slot is derived from the saves folder at write time and the ring is scoped per named colony |
-| high | No guard for targeting, float menus or paused interactions | `:91` | Save captures a half-finished interaction; neither `Targeter` nor `WorldTargeter` is serialised, so the pending callback cannot be restored |
+| ~~high~~ | ~~No guard for targeting, float menus or paused interactions~~ | fixed 2026-09-17, #3 | `ChronoSaveConditions` plus `FirstBlocker`, taken again inside the queued closure |
 | ~~medium~~ | ~~Success message posted even when the save threw~~ | fixed 2026-09-17, #4 | Reporting now happens inside the queued closure, after the write, and after the written file has been measured |
 | ~~medium~~ | ~~Toast is `historical`~~ | fixed 2026-09-17, #5 | Both toasts pass `historical: false` |
 | ~~medium~~ | ~~No permadeath handling, one `.rws.old` per slot there~~ | fixed 2026-09-17, #2 | Gated, disclosed, and affected colonies get a letter plus a rename button |

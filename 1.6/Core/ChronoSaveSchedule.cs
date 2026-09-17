@@ -294,6 +294,135 @@ namespace ChronoSave.Core
         }
 
         /// <summary>
+        /// Finds the first reason a chronosave cannot happen right now.
+        /// </summary>
+        /// <param name="conditions">This frame's readings.</param>
+        /// <returns>The blocker, or <see cref="ChronoSaveBlocker.None"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// This is deliberately more cautious than vanilla. <c>Autosaver.AutosaverTick</c> checks
+        /// only <c>SavingIsTemporarilyDisabled</c>, and gets away with it because it is reached from
+        /// <c>TickManager.DoSingleTick</c>, which does not run behind a force-pausing window. This
+        /// mod runs on the frame update instead, which is its entire selling point, so it has to
+        /// replace that invariant explicitly.
+        /// </para>
+        /// <para>
+        /// Three of the readings are worth explaining.
+        /// </para>
+        /// <para>
+        /// <c>ModalWindowOpen</c> comes from <c>WindowStack.AnyWindowAbsorbingAllInput</c>, not from
+        /// <c>WindowsForcePause</c>: saving while paused is what this mod is for, and pausing is not
+        /// the harm. Owning the mouse is. It is not <c>NonImmediateDialogWindowOpen</c> either, which
+        /// tests the window layer and so misses float menus entirely while catching non-modal
+        /// windows it should not. Neither a main tab nor the inspect pane absorbs input, so having
+        /// the work tab open does not starve chronosaves.
+        /// </para>
+        /// <para>
+        /// <c>FloatMenuOpen</c> is separate because a float menu sits on the Super layer and does
+        /// not absorb input, yet it is exactly a mid-interaction state whose next click a save would
+        /// steal.
+        /// </para>
+        /// <para>
+        /// <c>ScribeActive</c> is not decoration. <c>ScribeSaver.InitSaving</c> does not refuse when
+        /// a scribe operation is already running: it logs an error and calls
+        /// <c>Scribe.ForceStop()</c>, tearing down whatever else was mid-document, and
+        /// <c>GameDataSaveLoader.SaveGame</c> then swallows the fallout. That is the shape of the
+        /// truncated file in <c>docs/evidence/</c>.
+        /// </para>
+        /// </remarks>
+        public static ChronoSaveBlocker FirstBlocker(ChronoSaveConditions conditions)
+        {
+            // Order matters only for which reason gets logged, except at the top: the readings below
+            // WorldReady are not even legal to take until the ones above hold.
+            if (!conditions.Playing)
+            {
+                return ChronoSaveBlocker.NotPlaying;
+            }
+
+            if (!conditions.WorldReady)
+            {
+                return ChronoSaveBlocker.NoWorld;
+            }
+
+            if (!conditions.Enabled)
+            {
+                return ChronoSaveBlocker.Disabled;
+            }
+
+            if (conditions.CommitmentMode)
+            {
+                return ChronoSaveBlocker.CommitmentMode;
+            }
+
+            if (conditions.ScribeActive)
+            {
+                return ChronoSaveBlocker.ScribeBusy;
+            }
+
+            if (conditions.LongEventPending)
+            {
+                return ChronoSaveBlocker.LongEventInFlight;
+            }
+
+            if (conditions.VanillaSavingDisabled)
+            {
+                return ChronoSaveBlocker.VanillaSavingDisabled;
+            }
+
+            if (conditions.MapTargeterActive)
+            {
+                return ChronoSaveBlocker.MapTargeting;
+            }
+
+            if (conditions.WorldTargeterActive)
+            {
+                return ChronoSaveBlocker.WorldTargeting;
+            }
+
+            if (conditions.RoutePlannerActive)
+            {
+                return ChronoSaveBlocker.RoutePlanning;
+            }
+
+            if (conditions.ModalWindowOpen)
+            {
+                return ChronoSaveBlocker.ModalWindowOpen;
+            }
+
+            if (conditions.FloatMenuOpen)
+            {
+                return ChronoSaveBlocker.FloatMenuOpen;
+            }
+
+            return ChronoSaveBlocker.None;
+        }
+
+        /// <summary>
+        /// Whether a chronosave may happen right now.
+        /// </summary>
+        /// <param name="conditions">This frame's readings.</param>
+        /// <returns><c>true</c> when nothing is in the way.</returns>
+        public static bool CanSaveNow(ChronoSaveConditions conditions)
+        {
+            return FirstBlocker(conditions) == ChronoSaveBlocker.None;
+        }
+
+        /// <summary>
+        /// Whether a deferral is worth a log line.
+        /// </summary>
+        /// <param name="current">The blocker now.</param>
+        /// <param name="lastLogged">The blocker last written to the log.</param>
+        /// <returns><c>true</c> when the reason has changed and is worth recording.</returns>
+        /// <remarks>
+        /// Edge triggered, because the frame update runs sixty times a second and an unconditional
+        /// line would write sixty entries a second for as long as a dialog is open.
+        /// </remarks>
+        public static bool ShouldLogBlocker(ChronoSaveBlocker current, ChronoSaveBlocker lastLogged)
+        {
+            return current != ChronoSaveBlocker.None && current != lastLogged;
+        }
+
+        /// <summary>
         /// Reads the slot number out of a chronosave filename.
         /// </summary>
         /// <param name="saveName">The name to parse, without a directory or an extension.</param>

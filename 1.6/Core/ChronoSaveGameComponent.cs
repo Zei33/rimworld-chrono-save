@@ -32,22 +32,10 @@ namespace ChronoSave.Core
         private bool hasInitialized = false;
 
         /// <summary>
-        /// True between queueing a chronosave and that queued event finishing.
+        /// The deferral reason last written to the log, so it is written once rather than per frame.
         /// </summary>
-        /// <remarks>
-        /// Load bearing, and not obvious. A queued long event does not stop the game updating:
-        /// <c>LongEventHandler.ShouldWaitForEvent</c> returns false while the current event uses the
-        /// standard window, and this mod's event does, being synchronous with a plain
-        /// <c>Action</c>. So <c>Root_Play.Update</c> keeps calling <c>UpdatePlay</c> and this
-        /// component keeps ticking in the frames between queueing a save and the save running. The
-        /// interval condition is still true in those frames, so without this latch a second save is
-        /// queued one frame after the first.
-        ///
-        /// Deliberately not scribed. <c>ExposeData</c> runs inside the queued event, so a scribed
-        /// copy would be written as true and every loaded game would start with chronosaving
-        /// switched off.
-        /// </remarks>
-        private bool savePending;
+        /// <remarks>Not scribed.</remarks>
+        private ChronoSaveBlocker lastLoggedBlocker = ChronoSaveBlocker.None;
 
         /// <summary>
         /// Length of the last chronosave this session that verified, or zero when none has.
@@ -145,85 +133,36 @@ namespace ChronoSave.Core
         {
             base.GameComponentUpdate();
             
-            // Only save once the game is actually being played. GameComponentUpdate also runs
-            // during the pre-game screens: Root_Entry.Update calls Current.Game.UpdateEntry,
-            // which is nothing but GameComponentUtility.GameComponentUpdate, and Current.Game
-            // exists from Page_SelectScenario onwards. Find.World, Find.WorldInterface and
-            // Current.Game are all non-null from the landing-site page, so they do not separate
-            // the two states. Saving there throws inside Verse.Game.ExposeData, whose final
-            // statement is an unguarded Find.CameraDriver.Expose(), and CameraDriver is null in
-            // the entry scene. Scribe_Deep catches that and does not rethrow, so a truncated save
-            // with an empty <maps /> and no camera is committed to disk. ProgramState is the gate
-            // vanilla uses for its own save menu item.
-            if (Current.ProgramState != ProgramState.Playing)
-            {
-                return;
-            }
+            // Every read the decision needs, taken once, then handed to a pure function. The
+            // readings are untestable and the decision is not, which matters because the decision
+            // is the half that has been wrong.
+            ChronoSaveConditions conditions = ReadConditions();
 
-            // Skip if not fully initialized (prevents null reference during game startup)
-            if (Find.World == null || Find.WorldInterface == null || Current.Game == null)
+            if (rebindCheckPending && conditions.Playing && conditions.WorldReady)
             {
-                return;
-            }
-
-            GameInfo info = Current.Game.Info;
-            if (info == null)
-            {
-                // Cannot tell whether this is a Commitment colony, so do not write. A game with no
-                // info is already broken: vanilla's own Autosaver.AutosaveIntervalDays throws on the
-                // first tick in that state.
-                return;
-            }
-
-            if (rebindCheckPending)
-            {
-                // Before the gate below, so it still runs for the colonies it is about to protect.
+                // Ahead of the blocker check, so it still runs for the Commitment colonies the
+                // CommitmentMode blocker is about to stop saving. Those are the ones it is for.
                 rebindCheckPending = false;
-                WarnIfCommitmentSaveIsBoundToASlot(info);
+                WarnIfCommitmentSaveIsBoundToASlot();
             }
 
-            // Commitment mode is built around there being exactly one save file, and every extra
-            // copy is a way to roll back. Writing a rotating ring of up to 25 of them is the one
-            // thing that mode exists to prevent, so the mod does nothing here.
-            //
-            // Not a setting. An opt-out labelled "save in Commitment mode" is the same defect with a
-            // consent checkbox, and the mod could not honour it safely anyway while slot names are
-            // shared. The player is told instead, in the log at FinalizeInit and in the settings
-            // window.
-            //
-            // This returns before lastSaveRealTime is touched, like every other guard here, which
-            // normally means the save is deferred rather than cancelled. Harmless in this case:
-            // permadeathMode never changes within a game, so the deferred save never fires.
-            if (info.permadeathMode)
+            ChronoSaveBlocker blocker = ChronoSaveSchedule.FirstBlocker(conditions);
+            if (blocker != ChronoSaveBlocker.None)
             {
-                return;
-            }
-
-            // A chronosave is queued and has not run yet. See the remarks on savePending: this
-            // method keeps firing while the event waits, and the interval condition is still true.
-            //
-            // Checked before the settings and SavingIsTemporarilyDisabled guards deliberately, so
-            // the stale-latch watchdog below gets a chance to run in every state where this
-            // component is alive rather than only in the ones where a save would be allowed.
-            if (savePending)
-            {
-                // GenScene.GoToMainMenu calls LongEventHandler.ClearQueuedEvents before disposing
-                // the game, so a queued chronosave can be dropped without its finally ever running.
-                // No event queued and none running means ours is gone and the latch is stale.
-                if (!LongEventHandler.AnyEventNowOrWaiting)
+                // Deferral, not cancellation. lastSaveRealTime is untouched, so the interval
+                // condition stays true and the chronosave goes out on the first frame the state
+                // clears. That is what the 4 Aug 2026 report asked for, and it is why nothing on
+                // this path may write to lastSaveRealTime.
+                if (Prefs.DevMode && ChronoSaveSchedule.ShouldLogBlocker(blocker, lastLoggedBlocker))
                 {
-                    savePending = false;
-                    Log.Warning("[Chrono Save] A queued chronosave was discarded before it ran. Rescheduling.");
+                    Log.Message("[Chrono Save] Chronosave deferred: " + blocker);
                 }
 
+                lastLoggedBlocker = blocker;
                 return;
             }
 
-            // Skip if chronosave is disabled or saving is temporarily disabled
-            if (!Settings.ChronoSaveEnabled || GameDataSaveLoader.SavingIsTemporarilyDisabled)
-            {
-                return;
-            }
+            lastLoggedBlocker = ChronoSaveBlocker.None;
 
             // Check if enough real time has passed
             if (ChronoSaveSchedule.IsDue(lastSaveRealTime, Time.realtimeSinceStartup, Settings.SaveIntervalMinutes))
@@ -280,27 +219,20 @@ namespace ChronoSave.Core
                             return;
                         }
 
-                        if (Current.ProgramState != ProgramState.Playing)
-                        {
-                            ApplyOutcome(ChronoSaveOutcome.Aborted, null,
-                                "left play during the queue, ProgramState is " + Current.ProgramState);
-                            return;
-                        }
+                        // The whole condition set again, not a subset. A frame or two has passed
+                        // since this was queued, so a dialog, a targeter or a route planner can have
+                        // opened in between, and loading another colony can have made this a
+                        // Commitment one, which the identity check above does not cover because it
+                        // only rules out the Game being replaced.
+                        //
+                        // IgnoringOwnLongEvent drops exactly one reading, the long event, which is
+                        // necessarily true here because this closure is that event.
+                        ChronoSaveBlocker blocker =
+                            ChronoSaveSchedule.FirstBlocker(ReadConditions().IgnoringOwnLongEvent());
 
-                        if (GameDataSaveLoader.SavingIsTemporarilyDisabled)
+                        if (blocker != ChronoSaveBlocker.None)
                         {
-                            ApplyOutcome(ChronoSaveOutcome.Aborted, null,
-                                "saving became temporarily disabled during the queue");
-                            return;
-                        }
-
-                        // The same game object can still have become a Commitment colony's, because
-                        // the identity check above only rules out replacement. Cheap, and the cost
-                        // of being wrong is a rollback point in the one mode that forbids them.
-                        if (Current.Game.Info == null || Current.Game.Info.permadeathMode)
-                        {
-                            ApplyOutcome(ChronoSaveOutcome.Aborted, null,
-                                "a Commitment colony is loaded");
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, null, "blocked after queueing by " + blocker);
                             return;
                         }
 
@@ -334,21 +266,70 @@ namespace ChronoSave.Core
                         // the path lookup, the measurement and the message can.
                         ApplyOutcome(ChronoSaveOutcome.Failed, saveName, "chronosave threw: " + ex);
                     }
-                    finally
-                    {
-                        // Load bearing. Without it a throw is handled by LongEventHandler, which
-                        // knows nothing about this latch, and chronosaving stops silently for the
-                        // rest of the session.
-                        savePending = false;
-                    }
                 }, "ChronoSave_SavingMessage", false, null);
-
-                savePending = true;
             }
             catch (Exception ex)
             {
                 Log.Error($"[Chrono Save] Failed to queue a chronosave: {ex}");
             }
+        }
+
+        /// <summary>
+        /// Takes this frame's readings of the game state a chronosave depends on.
+        /// </summary>
+        /// <returns>The readings, for <see cref="ChronoSaveSchedule.FirstBlocker"/> to judge.</returns>
+        /// <remarks>
+        /// The order is load bearing and the early returns are not an optimisation. Each reading is
+        /// only legal once the one above it holds.
+        ///
+        /// <c>Current.ProgramState</c> has to come first, because this method also runs on the
+        /// pre-game screens: <c>Root_Entry.Update</c> calls <c>Current.Game.UpdateEntry</c>, whose
+        /// body is nothing but <c>GameComponentUtility.GameComponentUpdate</c>, and
+        /// <c>Current.Game</c> exists from <c>Page_SelectScenario</c> onwards. <c>Find.World</c>,
+        /// <c>Find.WorldInterface</c> and <c>Current.Game</c> are all non-null from the landing-site
+        /// page, so they do not separate the two states. <c>ProgramState</c> is the gate vanilla uses
+        /// for its own save menu item.
+        ///
+        /// Then <c>Find.Targeter</c> is <c>((UIRoot_Play)Find.UIRoot).mapUI.targeter</c> and throws
+        /// on the entry screen where <c>Find.UIRoot</c> is a <c>UIRoot_Entry</c>, and
+        /// <c>GameDataSaveLoader.SavingIsTemporarilyDisabled</c> dereferences <c>Find.TilePicker</c>,
+        /// which chains through <c>Find.World</c>.
+        /// </remarks>
+        private ChronoSaveConditions ReadConditions()
+        {
+            ChronoSaveConditions conditions = ChronoSaveConditions.AllClear();
+
+            conditions.Playing = Current.ProgramState == ProgramState.Playing && Current.Game != null;
+            if (!conditions.Playing)
+            {
+                return conditions;
+            }
+
+            conditions.WorldReady = Find.World != null && Find.WorldInterface != null;
+            if (!conditions.WorldReady)
+            {
+                return conditions;
+            }
+
+            // A game with no info cannot be asked whether it is a Commitment colony, so it is
+            // treated as one and nothing is written. That state is already broken anyway: vanilla's
+            // own Autosaver.AutosaveIntervalDays throws on the first tick without it.
+            GameInfo info = Current.Game.Info;
+            conditions.CommitmentMode = info == null || info.permadeathMode;
+
+            conditions.Enabled = Settings.ChronoSaveEnabled;
+            conditions.ScribeActive = Scribe.mode != LoadSaveMode.Inactive;
+            conditions.LongEventPending = LongEventHandler.AnyEventNowOrWaiting;
+            conditions.VanillaSavingDisabled = GameDataSaveLoader.SavingIsTemporarilyDisabled;
+            conditions.MapTargeterActive = Find.Targeter.IsTargeting;
+            conditions.WorldTargeterActive = Find.WorldTargeter.IsTargeting;
+            conditions.RoutePlannerActive = Find.WorldRoutePlanner.Active;
+
+            WindowStack windows = Find.WindowStack;
+            conditions.ModalWindowOpen = windows != null && windows.AnyWindowAbsorbingAllInput;
+            conditions.FloatMenuOpen = windows != null && windows.IsOpen<FloatMenu>();
+
+            return conditions;
         }
 
         /// <summary>
@@ -370,8 +351,14 @@ namespace ChronoSave.Core
         /// save-and-quit that is Commitment mode's only exit, and moves to the History tab when
         /// dismissed.
         /// </remarks>
-        private void WarnIfCommitmentSaveIsBoundToASlot(GameInfo info)
+        private void WarnIfCommitmentSaveIsBoundToASlot()
         {
+            GameInfo info = Current.Game != null ? Current.Game.Info : null;
+            if (info == null)
+            {
+                return;
+            }
+
             if (!ChronoSaveSchedule.NeedsRebindWarning(info.permadeathMode, info.permadeathModeUniqueName, rebindWarningIssuedFor))
             {
                 return;
@@ -499,9 +486,9 @@ namespace ChronoSave.Core
 
             // A different colony is in play, so the size baseline means nothing, and no chronosave
             // queued against the previous one can still be ours.
-            savePending = false;
             lastGoodSaveBytes = 0L;
             pendingRetryName = null;
+            lastLoggedBlocker = ChronoSaveBlocker.None;
         }
         
         /// <summary>

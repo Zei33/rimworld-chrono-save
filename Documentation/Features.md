@@ -56,7 +56,11 @@ Access through Options, then mod options, then Chrono Save
 - Resets timer when game is loaded/started
 - Prevents immediate save after loading
 - Respects game's temporary save disable states
-- Won't save during certain UI operations
+- Holds off while you are in the middle of something: picking a target on the map, picking a shuttle
+  or transport pod destination on the world map, planning a caravan route, or with a dialog or a
+  right-click menu open
+- A held-off save is not skipped. It goes out on the first moment the way is clear, rather than
+  waiting another full interval
 
 #### Integration
 - Fully compatible with vanilla autosave system

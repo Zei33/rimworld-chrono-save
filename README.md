@@ -14,7 +14,7 @@ Chrono Save creates automatic saves based on real-world time rather than in-game
 - **Real-Time Autosaves**: Saves every X minutes of real time (default: 5 minutes)
 - **Configurable Settings**: Adjust save interval and number of saves to keep
 - **Independent System**: Works alongside vanilla autosaves without interference
-- **Pause-Friendly**: Continues saving even when game is paused
+- **Pause-Friendly**: Continues saving even when game is paused, but holds off while you are mid-interaction
 - **Rotating Saves**: Keeps a set number of saves per colony, reusing the oldest slot first
 - **Full Localization**: Supports 9 languages
 
