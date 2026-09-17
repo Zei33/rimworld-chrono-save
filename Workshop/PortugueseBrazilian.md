@@ -34,7 +34,7 @@ Nunca mais perca progresso! Chrono Save adiciona um sistema de salvamento autom�
 [h2]CONFIGURAÇÃO FLEXÍVEL[/h2]
 [list]
 [*] Intervalo de salvamento: Ajustável de 1 a 60 minutos
-[*] Contagem de salvamentos: Escolha quantos chronosaves manter
+[*] Contagem de salvamentos: Escolha quantos cronossaves manter
 [*] Botão ligar/desligar: Ative ou desative o sistema conforme necessário
 [*] Acesse configurações através de Opções, depois opções de mods, depois Chrono Save
 [/list]

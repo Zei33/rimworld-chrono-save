@@ -34,7 +34,7 @@ Chrono Save [1.6] (Chrono Save)
 [h2]CONFIGURACIÓN FLEXIBLE[/h2]
 [list]
 [*] Intervalo de guardado: Ajustable de 1 a 60 minutos
-[*] Recuento de guardados: Elige cuántos chronosaves mantener
+[*] Recuento de guardados: Elige cuántos cronoguardados mantener
 [*] Interruptor activar/desactivar: Activa o desactiva el sistema según sea necesario
 [*] Accede a la configuración a través de Opciones, luego opciones de mods, luego Chrono Save
 [/list]
