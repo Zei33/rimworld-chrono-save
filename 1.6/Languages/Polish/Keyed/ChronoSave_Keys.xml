@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Tworzenie chronozapisu...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Utworzono chronozapis: {0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>Chronozapis {0} może być niekompletny. Zostanie nadpisany przy następnej próbie.</ChronoSave_SaveFailedMessage>
 </LanguageData>

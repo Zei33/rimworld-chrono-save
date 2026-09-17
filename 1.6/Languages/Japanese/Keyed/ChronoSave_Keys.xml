@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>クロノセーブを作成中...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>クロノセーブを作成しました：{0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>クロノセーブ {0} は不完全な可能性があります。次回の保存時に上書きされます。</ChronoSave_SaveFailedMessage>
 </LanguageData>

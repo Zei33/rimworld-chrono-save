@@ -35,9 +35,19 @@ directly. `HarnessTests` pins the boundary itself: if the settings static ever b
 `TheGameComponentStillCannotBeExercisedWithoutTheModSettingsStatic` starts failing, which is the
 signal to delete it and test the component directly.
 
-Coverage should be quoted against `ChronoSave.Core.ChronoSaveSchedule`, not the repo. A whole-repo
-figure would be misleading, because the settings UI, the game component's game-facing half and the
-Harmony patch are all unreachable and are roughly half the code.
+**`System.IO` is fully reachable**, which is the one part of the game's own surface that is. So the
+filesystem questions chronosaving asks go through `ChronoSaveFiles`, which takes a plain path and
+never calls `Verse.GenFilePaths`. The method that runs in game is the method the tests exercise;
+only the path resolution differs, and that lives at the call site.
+
+Coverage should be quoted against `ChronoSave.Core.ChronoSaveSchedule` and `ChronoSaveFiles`, not
+the repo. A whole-repo figure would be misleading, because the settings UI, the game component's
+game-facing half and the Harmony patch are all unreachable and are roughly half the code.
+
+One thing here has **no automated coverage and has to be checked in game**: the in-flight latch that
+stops a second chronosave being queued while the first is still waiting to run. It needs
+`LongEventHandler` and a real frame loop. Set the interval to one minute and confirm that exactly
+one status box appears per minute and exactly one file is written per interval.
 
 The background to all of this is `docs/spikes/test-harness/README.md` in the workspace, which
 records what each experiment established, including the two whose failure is the finding.

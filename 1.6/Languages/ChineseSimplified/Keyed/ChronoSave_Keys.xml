@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>正在创建实时存档...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>实时存档已创建：{0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>实时存档 {0} 可能不完整，将在下次保存时被覆盖。</ChronoSave_SaveFailedMessage>
 </LanguageData>

@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Creating chronosave...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Chronosave created: {0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>{0} may be incomplete. It will be rewritten on the next attempt.</ChronoSave_SaveFailedMessage>
 </LanguageData>

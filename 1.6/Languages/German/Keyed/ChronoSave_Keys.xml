@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Erstelle Chronospeicherung...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Chronospeicherung erstellt: {0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>Die Chronospeicherung {0} ist möglicherweise unvollständig. Sie wird beim nächsten Versuch überschrieben.</ChronoSave_SaveFailedMessage>
 </LanguageData>

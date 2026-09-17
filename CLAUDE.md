@@ -22,9 +22,11 @@ paused, which is the mod's selling point and the source of both live user report
 Per frame: `Root_Play.Update` -> `Current.Game.UpdatePlay()` -> `GameComponentUtility.GameComponentUpdate()`
 -> `ChronoSaveGameComponent.GameComponentUpdate()` (`:80`). `Root_Entry.Update` reaches the same method
 via `Current.Game.UpdateEntry()`, which matters (trap 1). Save path: `PerformChronoSave` (`:110`) ->
-`GetNextChronoSaveName` (`:156`) -> `QueueLongEvent(closure, "ChronoSave_SavingMessage", doAsynchronously:
-false, null)`; `lastSaveRealTime` and `currentSaveIndex` update synchronously at `:138-143`, and the
-closure calls `GameDataSaveLoader.SaveGame` then `Messages.Message` one or two frames later.
+`GetNextChronoSaveName` -> `QueueLongEvent(closure, "ChronoSave_SavingMessage", doAsynchronously:
+false, null)`. Since #4, **nothing outside the closure reports anything**: the closure re-checks its
+guards, calls `GameDataSaveLoader.SaveGame`, measures the written file, and only then reaches
+`ApplyOutcome`, which is the sole writer of `lastSaveRealTime`, `currentSaveIndex`, the toast and the
+log line. `savePending` latches across the queue window; see trap 16 for why it has to.
 
 The whole fragile surface is one Harmony patch, a postfix on the private `Verse.Game.FillComponents()`,
 and it does nothing (trap 9). No Defs, no XML patches, no `LoadFolders.xml`, no `DefOf` of its own.
@@ -57,12 +59,20 @@ project decompile number the same file differently.
 6. Shipped copy contradicts trap 5. `About/About.xml:23`, `README.md:18`, `Documentation/Features.md:14`,
    the key `ChronoSave_NumberOfSavesTooltip` and the equivalent line in all nine `Workshop/*.md` files
    claim the oldest save is overwritten. Fix the code or fix the copy, but do not leave them disagreeing.
-7. The success toast lies. `GameDataSaveLoader.SaveGame` returns `void` and swallows everything into
-   `Log.Error`, so `Messages.Message` at `:134` runs even when the save threw. The `Log.Message` at `:145`
-   is worse: it runs before the queued event has executed at all.
-8. That toast is `historical` (the bound overload defaults it true). `Archive.MaxNonPinnedArchivables` is
-   200 and culls oldest-first, and the archive is deep-serialised into every save, so twelve saves an hour
-   evicts real letters from the history tab within about sixteen hours. Pass `historical: false`.
+7. **Fixed 2026-09-17 (#4).** The success toast used to lie: `GameDataSaveLoader.SaveGame` returns
+   `void` and swallows everything into `Log.Error`, and the `Log.Message` ran before the queued event
+   had executed at all. The toast, the log line, the timer and the slot advance now all live in
+   `ApplyOutcome`, which only the queued closure reaches, after the write has been attempted and the
+   written file measured. Keep them there. Swallowing goes deeper than `SaveGame`: `Scribe_Deep.Look`
+   catches anything short of an `OutOfMemoryException` thrown inside `ExposeData` and carries on, so
+   a save that fails part way still reaches `SafeSaver.FinalizeSaving` and commits a well formed but
+   truncated document. **The absence of an exception is not evidence of success**; the size of what
+   landed is the only in-process signal there is.
+8. **Fixed 2026-09-17 (#5).** The toast was `historical` (the bound overload defaults it true).
+   `Archive.MaxNonPinnedArchivables` is 200 and culls oldest-first, and the archive is
+   deep-serialised into every save, so twelve saves an hour evicted real letters from the history
+   tab within about sixteen hours. Both toasts now pass `historical: false` explicitly. Any new
+   `Messages.Message` in this mod must do the same; the default is the trap.
 9. The Harmony patch is unreachable dead code. `Verse.Game.FillComponents` already constructs every
    non-abstract `GameComponent` subclass with `Activator.CreateInstance(type, this)`, and
    `GenTypes.AllActiveAssemblies` includes mod assemblies, so the postfix's `GetComponent<...>() != null`
@@ -76,9 +86,15 @@ project decompile number the same file differently.
     restores from `.old` if the swap fails, then pops `GenUI.ErrorDialog("ProblemSavingFile")`. The mod
     inherits that by routing through the vanilla entry point.
 12. Two of the three `Current.Game == null` checks are dead: `GameComponentUtility.GameComponentUpdate()`
-    opens with `Current.Game.components`, so `:85` and `:116` cannot fire. The one in the closure (`:128`)
-    is real, but a null check does not cover Game *replacement*: load another colony in that one-frame
-    window and the closure writes the new colony under the old captured `saveName`.
+    opens with `Current.Game.components`, so `:85` and `:116` cannot fire. The one in the closure was
+    real but insufficient, because a null check does not cover Game *replacement*: load another colony
+    in that window and the closure writes the new colony under the old captured `saveName`.
+    **Fixed 2026-09-17 (#4)** by capturing the `Game` at queue time and comparing with
+    `ReferenceEquals`, not by null-checking. One residual hazard is knowingly left open: if
+    `Game.Dispose()` has run but `Current.Game` still points at the same object, the identity check
+    passes and a disposed `Game` is serialised. The managed graph survives `Dispose`, so it probably
+    writes something wrong rather than throwing. Size verification gives partial cover, holding the
+    slot and warning rather than reporting success.
 13. The save is synchronous (`doAsynchronously: false` routes to `UpdateCurrentSynchronousEvent` on the
     main thread, as vanilla's does). No timer thread, no cross-thread state. Only the docs call it async.
 14. A failed guard defers the save, it does not cancel it: `GameComponentUpdate` returns before touching
@@ -87,10 +103,22 @@ project decompile number the same file differently.
 15. `GetNextChronoSaveName` reads as if it searches for a free slot. It does not; it returns on the first
     iteration for any `NumberOfSaves >= 1`, and the real wrap is the separate increment at `:139-143`.
     Change the rotation policy in both places or neither.
-16. Cosmetics worth knowing: `ChronoSaveSettings.cs:68-78` never writes the clamp back, so `70` displays
+16. **A queued long event does not pause the game.** This is the least obvious thing in the file and
+    it decides the shape of the save path. `LongEventHandler.ShouldWaitForEvent` returns **false**
+    while the current event uses the standard window, and `UseStandardWindow` is
+    `canEverUseStandardWindow && !doAsynchronously && eventActionEnumerator == null`, which this
+    mod's call satisfies. So `Root_Play.Update` keeps calling `UpdatePlay`, `GameComponentUpdate`
+    keeps firing in the frames between queueing a save and the save running, and the interval
+    condition is still true in those frames. Anything that resets the timer must therefore either
+    run at queue time or be paired with a latch. #4 moved the reset into the closure, so the latch
+    (`savePending`) is what stops a second save being queued one frame after the first. It is
+    cleared in a `finally`, and `GameComponentUpdate` additionally clears it when
+    `!LongEventHandler.AnyEventNowOrWaiting`, because `GenScene.GoToMainMenu` calls
+    `ClearQueuedEvents()` before disposing the game and the closure's `finally` never runs then.
+17. Cosmetics worth knowing: `ChronoSaveSettings.cs:68-78` never writes the clamp back, so `70` displays
     with 60 in effect and clearing the field refills it instantly; `TipRegion(listing.GetRect(0f), ...)` at
     `:85` binds a tooltip to a zero-height rect, translated nine times and never shown; `ModEntry.cs:37`
-    logs "Loaded version 1.0"; `ChronoSaveGameComponent.cs:145` logs per save outside `Prefs.DevMode`.
+    logs "Loaded version 1.0". The per-save `Log.Message` is gated on `Prefs.DevMode` as of #4.
 
 ## Defect register
 
@@ -99,8 +127,8 @@ project decompile number the same file differently.
 | critical | Saves fire on the pre-game entry screens | `ChronoSaveGameComponent.cs:85` | `Game.ExposeData` -> `Find.CameraDriver.Expose()` NREs (the entry scene nulls `cameraDriverInt`): red error plus a modal ProblemSavingFile dialog every interval, slot burned, success toast still posted |
 | high | No guard for targeting, float menus or paused interactions | `:91` | Save captures a half-finished interaction; neither `Targeter` nor `WorldTargeter` is serialised, so the pending callback cannot be restored |
 | high | Rotation is a serialised counter, not oldest-first | `:156`, `:192` | A new colony destroys the previous colony's ring; loading an old chronosave overwrites the newest ones |
-| medium | Success message posted even when the save threw | `:133` | Player believes a recovery point exists that does not |
-| medium | Toast is `historical` | `:134` | Archive evicts real gameplay history and bloats every save |
+| ~~medium~~ | ~~Success message posted even when the save threw~~ | fixed 2026-09-17, #4 | Reporting now happens inside the queued closure, after the write, and after the written file has been measured |
+| ~~medium~~ | ~~Toast is `historical`~~ | fixed 2026-09-17, #5 | Both toasts pass `historical: false` |
 | medium | No permadeath handling, one `.rws.old` per slot there | `:121` | Commitment mode silently gains rollback points |
 | medium | Name collision with user saves, orphaned slots when the max is lowered | `:161` | A user file named `Chronosave-3` is overwritten; slots above the new max sit on disk forever |
 | medium | Harmony patch unreachable, dependency unnecessary | `GameComponentInjectionPatch.cs:20` | No runtime failure; a dependency prompt and patch surface for nothing |

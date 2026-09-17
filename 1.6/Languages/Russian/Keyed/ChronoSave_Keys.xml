@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Создание хроносохранения...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Хроносохранение создано: {0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>Хроносохранение {0} может быть неполным. Оно будет перезаписано при следующей попытке.</ChronoSave_SaveFailedMessage>
 </LanguageData>

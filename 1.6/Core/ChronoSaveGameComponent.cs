@@ -26,7 +26,31 @@ namespace ChronoSave.Core
         /// Whether we've performed the initial time sync after loading.
         /// </summary>
         private bool hasInitialized = false;
-        
+
+        /// <summary>
+        /// True between queueing a chronosave and that queued event finishing.
+        /// </summary>
+        /// <remarks>
+        /// Load bearing, and not obvious. A queued long event does not stop the game updating:
+        /// <c>LongEventHandler.ShouldWaitForEvent</c> returns false while the current event uses the
+        /// standard window, and this mod's event does, being synchronous with a plain
+        /// <c>Action</c>. So <c>Root_Play.Update</c> keeps calling <c>UpdatePlay</c> and this
+        /// component keeps ticking in the frames between queueing a save and the save running. The
+        /// interval condition is still true in those frames, so without this latch a second save is
+        /// queued one frame after the first.
+        ///
+        /// Deliberately not scribed. <c>ExposeData</c> runs inside the queued event, so a scribed
+        /// copy would be written as true and every loaded game would start with chronosaving
+        /// switched off.
+        /// </remarks>
+        private bool savePending;
+
+        /// <summary>
+        /// Length of the last chronosave this session that verified, or zero when none has.
+        /// </summary>
+        /// <remarks>Deliberately not scribed: it is a within-session baseline, not colony state.</remarks>
+        private long lastGoodSaveBytes;
+
         /// <summary>
         /// Gets the mod settings instance.
         /// </summary>
@@ -102,12 +126,32 @@ namespace ChronoSave.Core
                 return;
             }
             
+            // A chronosave is queued and has not run yet. See the remarks on savePending: this
+            // method keeps firing while the event waits, and the interval condition is still true.
+            //
+            // Checked before the settings and SavingIsTemporarilyDisabled guards deliberately, so
+            // the stale-latch watchdog below gets a chance to run in every state where this
+            // component is alive rather than only in the ones where a save would be allowed.
+            if (savePending)
+            {
+                // GenScene.GoToMainMenu calls LongEventHandler.ClearQueuedEvents before disposing
+                // the game, so a queued chronosave can be dropped without its finally ever running.
+                // No event queued and none running means ours is gone and the latch is stale.
+                if (!LongEventHandler.AnyEventNowOrWaiting)
+                {
+                    savePending = false;
+                    Log.Warning("[Chrono Save] A queued chronosave was discarded before it ran. Rescheduling.");
+                }
+
+                return;
+            }
+
             // Skip if chronosave is disabled or saving is temporarily disabled
             if (!Settings.ChronoSaveEnabled || GameDataSaveLoader.SavingIsTemporarilyDisabled)
             {
                 return;
             }
-            
+
             // Check if enough real time has passed
             if (ChronoSaveSchedule.IsDue(lastSaveRealTime, Time.realtimeSinceStartup, Settings.SaveIntervalMinutes))
             {
@@ -136,41 +180,134 @@ namespace ChronoSave.Core
                 }
                 
                 string saveName = GetNextChronoSaveName();
-                
-                // Queue the save operation as a long event to prevent UI freezing
+
+                // Captured so the closure judges the attempt against the state it was queued for.
+                // Identity, not just non-null: loading another colony in the window between
+                // queueing and executing replaces Current.Game, and a null check does not see that.
+                int queuedSlot = currentSaveIndex;
+                Game queuedGame = Current.Game;
+
+                // Queue the save operation as a long event to prevent UI freezing. Nothing after
+                // this point reports anything: the message, the log line, the timer and the slot
+                // all live in ApplyOutcome, which only the closure reaches, and only once the write
+                // has been attempted and measured.
                 LongEventHandler.QueueLongEvent(() =>
                 {
-                    // Final safety check inside the queued operation. QueueLongEvent defers this,
-                    // so the player can have returned to the main menu in between, which puts
-                    // ProgramState back to Entry and nulls CameraDriver.
-                    if (Current.Game == null)
+                    try
                     {
-                        Log.Warning("[Chrono Save] Save aborted: Current.Game became null during queue");
-                        return;
+                        // Final safety checks inside the queued operation. QueueLongEvent defers
+                        // this, so the player can have returned to the main menu or loaded another
+                        // colony in between. Each of these is also checked before queueing; getting
+                        // here means the state changed inside that window.
+                        if (!ReferenceEquals(Current.Game, queuedGame))
+                        {
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, queuedSlot, saveName,
+                                "the game was replaced during the queue");
+                            return;
+                        }
+
+                        if (Current.ProgramState != ProgramState.Playing)
+                        {
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, queuedSlot, saveName,
+                                "left play during the queue, ProgramState is " + Current.ProgramState);
+                            return;
+                        }
+
+                        if (GameDataSaveLoader.SavingIsTemporarilyDisabled)
+                        {
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, queuedSlot, saveName,
+                                "saving became temporarily disabled during the queue");
+                            return;
+                        }
+
+                        // Returns void and swallows every exception into Log.Error, so nothing after
+                        // this can learn from a thrown exception whether it worked.
+                        GameDataSaveLoader.SaveGame(saveName);
+
+                        long writtenBytes = ChronoSaveFiles.MeasureSaveFile(GenFilePaths.FilePathForSavedGame(saveName));
+                        bool plausible = ChronoSaveSchedule.IsPlausibleSaveSize(writtenBytes, lastGoodSaveBytes);
+                        string detail = $"{writtenBytes} bytes written, previous good save was {lastGoodSaveBytes} bytes";
+
+                        if (plausible)
+                        {
+                            lastGoodSaveBytes = writtenBytes;
+                            ApplyOutcome(ChronoSaveOutcome.Succeeded, queuedSlot, saveName, detail);
+                            return;
+                        }
+
+                        ApplyOutcome(ChronoSaveOutcome.Failed, queuedSlot, saveName, detail);
                     }
-                    
-                    if (Current.ProgramState != ProgramState.Playing)
+                    catch (Exception ex)
                     {
-                        Log.Warning("[Chrono Save] Save aborted: left play during queue. ProgramState is " + Current.ProgramState);
-                        return;
+                        // SaveGame itself cannot reach here. The path lookup, the measurement and
+                        // the message can.
+                        ApplyOutcome(ChronoSaveOutcome.Failed, queuedSlot, saveName, "chronosave threw: " + ex);
                     }
-                    
-                    GameDataSaveLoader.SaveGame(saveName);
-                    Messages.Message("ChronoSave_SavedMessage".Translate(saveName), MessageTypeDefOf.SilentInput);
+                    finally
+                    {
+                        // Load bearing. Without it a throw is handled by LongEventHandler, which
+                        // knows nothing about this latch, and chronosaving stops silently for the
+                        // rest of the session.
+                        savePending = false;
+                    }
                 }, "ChronoSave_SavingMessage", false, null);
-                
-                // Update tracking variables
-                lastSaveRealTime = Time.realtimeSinceStartup;
-                currentSaveIndex = ChronoSaveSchedule.AdvanceSlot(currentSaveIndex, Settings.NumberOfSaves);
-                
-                Log.Message($"[Chrono Save] Saved game as {saveName}. Next save in {Settings.SaveIntervalMinutes} minutes.");
+
+                savePending = true;
             }
             catch (Exception ex)
             {
-                Log.Error($"[Chrono Save] Failed to perform chronosave: {ex}");
+                Log.Error($"[Chrono Save] Failed to queue a chronosave: {ex}");
             }
         }
-        
+
+        /// <summary>
+        /// Applies the timer, slot, message and log consequences of a finished chronosave attempt.
+        /// </summary>
+        /// <param name="outcome">What the attempt actually did.</param>
+        /// <param name="slot">The slot the attempt was made against.</param>
+        /// <param name="saveName">The filename the attempt used.</param>
+        /// <param name="detail">Detail for the log only; never shown to the player.</param>
+        /// <remarks>
+        /// The only place any of those four things happen. Every outcome writes
+        /// <c>lastSaveRealTime</c>, including the ones that failed, because the latch clears as this
+        /// returns and the frame update runs again immediately: leaving the timer alone would make
+        /// the whole cycle repeat every few frames.
+        /// </remarks>
+        private void ApplyOutcome(ChronoSaveOutcome outcome, int slot, string saveName, string detail)
+        {
+            ChronoSaveResolution resolution = ChronoSaveSchedule.Resolve(
+                outcome,
+                Time.realtimeSinceStartup,
+                Settings.SaveIntervalMinutes);
+
+            lastSaveRealTime = resolution.LastSaveRealTime;
+            currentSaveIndex = ChronoSaveSchedule.NextSlot(outcome, slot, Settings.NumberOfSaves);
+
+            if (resolution.ShowSuccessMessage)
+            {
+                // historical: false. The default routes this to Find.Archive.Add, which culls
+                // non-pinned entries above MaxNonPinnedArchivables oldest first, so twelve of these
+                // an hour evicts the player's real gameplay events from the history tab.
+                Messages.Message("ChronoSave_SavedMessage".Translate(saveName), MessageTypeDefOf.SilentInput, historical: false);
+
+                if (Prefs.DevMode)
+                {
+                    Log.Message($"[Chrono Save] Saved {saveName}. {detail}. Next save in {Settings.SaveIntervalMinutes} minutes.");
+                }
+
+                return;
+            }
+
+            if (resolution.ShowFailureMessage)
+            {
+                Messages.Message("ChronoSave_SaveFailedMessage".Translate(saveName), MessageTypeDefOf.NegativeEvent, historical: false);
+                Log.Error($"[Chrono Save] {saveName} did not verify: {detail}. The slot is kept and will be rewritten.");
+                return;
+            }
+
+            Log.Warning($"[Chrono Save] Chronosave called off before writing: {detail}. The slot is unchanged.");
+        }
+
         /// <summary>
         /// Gets the name for the next chronosave file.
         /// </summary>
@@ -190,6 +327,11 @@ namespace ChronoSave.Core
         {
             lastSaveRealTime = Time.realtimeSinceStartup;
             hasInitialized = true;
+
+            // A different colony is in play, so the size baseline means nothing, and no chronosave
+            // queued against the previous one can still be ours.
+            savePending = false;
+            lastGoodSaveBytes = 0L;
         }
         
         /// <summary>

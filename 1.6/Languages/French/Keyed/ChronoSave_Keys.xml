@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Création d'une chronosauvegarde...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Chronosauvegarde créée : {0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>La chronosauvegarde {0} est peut-être incomplète. Elle sera écrasée lors de la prochaine tentative.</ChronoSave_SaveFailedMessage>
 </LanguageData>

@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Creando cronoguardado...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Cronoguardado creado: {0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>El cronoguardado {0} puede estar incompleto. Se sobrescribirá en el siguiente intento.</ChronoSave_SaveFailedMessage>
 </LanguageData>

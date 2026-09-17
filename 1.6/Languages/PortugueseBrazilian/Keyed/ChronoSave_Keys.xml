@@ -20,4 +20,5 @@
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Criando cronossave...</ChronoSave_SavingMessage>
   <ChronoSave_SavedMessage>Cronossave criado: {0}</ChronoSave_SavedMessage>
+  <ChronoSave_SaveFailedMessage>O cronossave {0} pode estar incompleto. Ele será sobrescrito na próxima tentativa.</ChronoSave_SaveFailedMessage>
 </LanguageData>
