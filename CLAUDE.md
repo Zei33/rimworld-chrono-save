@@ -1,11 +1,22 @@
 # Chrono Save (rimworld-chrono-save)
 
+> **All eight GitHub issues are closed as of 2026-09-17, and the code is on `main` but not released.**
+> 598 subscribers still run the August 2025 build, so every defect below marked fixed is still live
+> for them until slice 8 ships. Before that upload: bump `<modVersion>` (still 1.0.1), and check two
+> things in a running game, because nothing in this tree can. One, the Commitment rename flow end to
+> end: the button appears, the dialog opens, RimWorld autosaves under the new name, the slot file is
+> removed, the notice disappears. Two, that exactly one chronosave is written per interval at a
+> one-minute setting. The change note must mention that the `brrainz.harmony` dependency is gone.
+
+
 A second autosave system driven by real-world time instead of game time. A `GameComponent` polls
 `Time.realtimeSinceStartup` every frame and, once the configured interval elapses (default 5 min, range
-1-60), queues a vanilla save named `Chronosave-N`, rotating N from 1 to a configured maximum (default 10,
-range 1-25). Running on the frame update rather than the tick means it keeps saving while the game is
-paused, which is the mod's selling point and the source of both live user reports. Workshop 3549864494,
-598 subscribers, `<modVersion>1.0.1</modVersion>`, last file update 22 Aug 2025, 422 LOC.
+1-60), queues a vanilla save. The filename is chosen from the saves folder at the moment of writing:
+`Chronosave-<Colony>-N` once the colony has a name, `Chronosave-N` before that, taking the first
+unused slot or else the one written longest ago. Running on the frame update rather than the tick
+means it keeps saving while the game is paused, which is the mod's selling point and the source of
+both live user reports. Workshop 3549864494, 598 subscribers, `<modVersion>1.0.1</modVersion>`, last
+file update 22 Aug 2025.
 
 ## Architecture
 
