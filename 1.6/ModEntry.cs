@@ -1,4 +1,3 @@
-using HarmonyLib;
 using Verse;
 using ChronoSave.Core;
 using UnityEngine;
@@ -6,8 +5,7 @@ using UnityEngine;
 namespace ChronoSave
 {
     /// <summary>
-    /// Main mod entry point for the Chrono Save mod.
-    /// Handles mod initialization, settings management, and Harmony patching.
+    /// Main mod entry point for the Chrono Save mod. Holds the settings and draws their window.
     /// </summary>
     public class ChronoSaveMod : Mod
     {   
@@ -18,23 +16,29 @@ namespace ChronoSave
         public static ChronoSaveSettings Settings { get; private set; }
         
         /// <summary>
-        /// The Harmony instance used for applying patches to the base game.
-        /// </summary>
-        private readonly Harmony harmony;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ChronoSaveMod"/> class.
-        /// Sets up mod settings, applies Harmony patches, and logs successful initialization.
         /// </summary>
         /// <param name="pack">The mod content pack containing mod information and assets.</param>
+        /// <remarks>
+        /// No Harmony instance and no patches. This mod had exactly one, a postfix on the private
+        /// <c>Verse.Game.FillComponents</c> that added <see cref="Core.ChronoSaveGameComponent"/>,
+        /// and it never did anything: <c>FillComponents</c> already walks
+        /// <c>typeof(GameComponent).AllSubclassesNonAbstract()</c> and constructs whatever is
+        /// missing with <c>Activator.CreateInstance(type, this)</c>, and that enumeration covers
+        /// every loaded mod assembly through <c>GenTypes.AllActiveAssemblies</c>. So the component
+        /// already existed by the time the postfix ran and its own guard returned early every time.
+        /// Its log line had never appeared in anybody's log.
+        ///
+        /// Removing it retires the declared <c>brrainz.harmony</c> dependency too, which is why the
+        /// two go together: dropping the patch alone would leave the install prompt, and dropping
+        /// the dependency while this constructor still called <c>PatchAll()</c> would leave a hard
+        /// runtime dependency on a library that might then be absent.
+        /// </remarks>
         public ChronoSaveMod(ModContentPack pack) : base(pack)
         {
             Settings = GetSettings<ChronoSaveSettings>();
-            
-            harmony = new Harmony("com.zei33.chronosave");
-            harmony.PatchAll();
 
-            Log.Message("[Chrono Save] Loaded version 1.0 successfully.");
+            Log.Message("[Chrono Save] Loaded.");
         }
         
         /// <summary>

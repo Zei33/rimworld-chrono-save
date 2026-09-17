@@ -11,11 +11,13 @@ CORE FEATURES
 - Works independently of vanilla autosaves - no interference
 - Continues saving even when game is paused or at different speeds
 - Rotating save system prevents save file buildup
+- No Harmony patches and no dependencies
 
 FUNCTIONALITY
 - Uses real-world time tracking instead of in-game time
 - Creates saves named after your colony once you name it, with rotating numbers
 - Saves are standard RimWorld saves - fully compatible with all features
+- Each chronosave is checked after it is written, and you are told if one looks incomplete
 - Minimal performance impact with efficient time tracking
 
 SAVE MANAGEMENT
@@ -34,18 +36,18 @@ FLEXIBLE CONFIGURATION
 PAUSE-FRIENDLY DESIGN
 - Saves continue even when game is paused
 - Works at all game speeds (1x, 2x, 3x)
-- Perfect for long planning sessions or AFK periods</description>
+- Perfect for long planning sessions or AFK periods
+- Holds off while you are picking a target, choosing a shuttle destination, planning a caravan route
+  or reading a dialog, then saves as soon as you are done
+
+COMMITMENT MODE
+- No chronosaves are written while a Commitment mode colony is loaded
+- That mode is built around a single save file, and every extra copy is a way to roll back
+- There is no setting to change this</description>
   <supportedVersions>
     <li>1.6</li>
   </supportedVersions>
-  <modDependencies>
-    <li>
-      <packageId>brrainz.harmony</packageId>
-      <displayName>Harmony</displayName>
-      <steamWorkshopUrl>https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077</steamWorkshopUrl>
-      <downloadUrl>https://github.com/pardeike/HarmonyRimWorld/releases/latest</downloadUrl>
-    </li>
-  </modDependencies>
+  <modDependencies />
   <loadAfter />
   <incompatibleWith />
 </ModMetaData>

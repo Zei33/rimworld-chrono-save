@@ -27,8 +27,8 @@ calls, which is narrower than it sounds but rules out most of this mod:
 - `ChronoSaveGameComponent` reads settings through the static `ChronoSaveMod.Settings`, which only
   the game populates, and reads `UnityEngine.Time.realtimeSinceStartup`, which is a native call.
 - `GameComponentUpdate` additionally needs `Current.Game`, `Find.World` and `GameDataSaveLoader`.
-- Harmony cannot patch on this runtime at all, in or out of the game process, so
-  `GameComponentInjectionPatch` has no path to automated coverage.
+- Harmony cannot patch on this runtime at all. Moot as of 2026-09-17, since the mod has no patches
+  and no Harmony dependency, but it still rules the technique out if one is ever added.
 
 So every decision that can be stated as arithmetic lives in `ChronoSaveSchedule` and is tested
 directly. `HarnessTests` pins the boundary itself: if the settings static ever becomes injectable,

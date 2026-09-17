@@ -38,6 +38,12 @@ namespace ChronoSave.Core
         private ChronoSaveBlocker lastLoggedBlocker = ChronoSaveBlocker.None;
 
         /// <summary>
+        /// Whether the missing-settings error has already been logged this session.
+        /// </summary>
+        /// <remarks>Not scribed. The frame update would otherwise repeat it sixty times a second.</remarks>
+        private bool missingSettingsReported;
+
+        /// <summary>
         /// Length of the last chronosave this session that verified, or zero when none has.
         /// </summary>
         /// <remarks>Deliberately not scribed: it is a within-session baseline, not colony state.</remarks>
@@ -96,7 +102,11 @@ namespace ChronoSave.Core
             {
                 lastSaveRealTime = Time.realtimeSinceStartup;
                 hasInitialized = true;
-                Log.Message($"[Chrono Save] Initialized. Next save in {Settings.SaveIntervalMinutes} minutes.");
+
+                if (Settings != null)
+                {
+                    Log.Message($"[Chrono Save] Initialized. Next save in {Settings.SaveIntervalMinutes} minutes.");
+                }
             }
 
             // Outside the block above, deliberately. hasInitialized is scribed, so on a loaded game
@@ -133,6 +143,20 @@ namespace ChronoSave.Core
         {
             base.GameComponentUpdate();
             
+            if (Settings == null)
+            {
+                // Only reachable if the Mod constructor threw, which LoadedModManager logs and then
+                // carries on from, leaving the static null. Vanilla still creates this component, so
+                // without the guard every frame after that produces another red error. Logged once.
+                if (!missingSettingsReported)
+                {
+                    missingSettingsReported = true;
+                    Log.Error("[Chrono Save] Settings were never created, so chronosaving is off for this session. The mod's constructor must have failed earlier in the log.");
+                }
+
+                return;
+            }
+
             // Every read the decision needs, taken once, then handed to a pure function. The
             // readings are untestable and the decision is not, which matters because the decision
             // is the half that has been wrong.
@@ -178,19 +202,11 @@ namespace ChronoSave.Core
         {
             try
             {
-                // Double-check game state before attempting save
-                if (Current.Game == null)
-                {
-                    Log.Warning("[Chrono Save] Cannot save: Current.Game is null");
-                    return;
-                }
-                
-                if (Current.ProgramState != ProgramState.Playing)
-                {
-                    Log.Warning("[Chrono Save] Cannot save: not in play. ProgramState is " + Current.ProgramState);
-                    return;
-                }
-                
+                // No re-checking of Current.Game or ProgramState here. This method is only reached
+                // when FirstBlocker returned None, which has already established both, and
+                // GameComponentUtility.GameComponentUpdate opens with Current.Game.components, so a
+                // null game could not have got this far in the first place.
+
                 // Captured so the closure judges the attempt against the state it was queued for.
                 // Identity, not just non-null: loading another colony in the window between
                 // queueing and executing replaces Current.Game, and a null check does not see that.

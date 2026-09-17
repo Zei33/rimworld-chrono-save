@@ -87,13 +87,14 @@ Access through Options, then mod options, then Chrono Save
 ### Performance Optimized
 - Minimal performance impact
 - Uses frame updates, not game ticks
-- Asynchronous save operations
+- Saves synchronously, the same way a vanilla autosave does: the game stops for the moment the file
+  is written rather than serialising a live game from another thread
 - No impact when disabled
 
 ### Compatibility
 - Works with other mods
-- Minimal Harmony patching
-- No save game corruption risk
+- No Harmony patches at all, so no patch conflicts are possible, and no Harmony dependency
+- Every chronosave is checked after it is written, and you are told if one does not look complete
 - Safe to add/remove mid-game
 
 ### Localization

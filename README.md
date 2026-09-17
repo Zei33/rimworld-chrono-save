@@ -52,13 +52,16 @@ For example, with default settings and a colony named Crimson Fleet:
 - **RimWorld Version**: 1.6
 - **Multiplayer**: Compatible
 - **Save Games**: Safe to add/remove mid-game
-- **Other Mods**: No known conflicts
+- **Other Mods**: No known conflicts, and no Harmony patches to conflict with
+- **Commitment mode**: No chronosaves are written while a Commitment colony is loaded
 
 ## Technical Details
 
-- Uses Harmony for minimal game patching
+- No Harmony patches and no Harmony dependency
 - Implements a custom GameComponent for time tracking
-- Saves are created using RimWorld's standard save system
+- Saves are created using RimWorld's standard save system, synchronously, the same way a vanilla
+  autosave is
+- Every chronosave is checked after it is written, and you are told if one does not look complete
 - Performance impact: Negligible
 
 ## FAQ
@@ -68,6 +71,10 @@ A: No, Chrono Save operates independently and creates separate save files.
 
 **Q: What happens if I disable the mod?**
 A: Existing chronosaves remain playable. The mod can be safely removed.
+
+**Q: Does it work in Commitment mode?**
+A: No, deliberately. Commitment mode is built around a colony having one save file, and every extra
+copy is a way to roll back. There is no setting to change this.
 
 ## Support
 

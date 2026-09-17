@@ -63,11 +63,6 @@
       <Private>false</Private>
     </Reference>
 
-    <!-- Harmony is supplied at runtime by the brrainz.harmony mod dependency -->
-    <Reference Include="0Harmony">
-      <HintPath>1.6/Libraries/0Harmony.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
   </ItemGroup>
 
 </Project>

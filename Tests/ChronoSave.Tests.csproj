@@ -62,10 +62,6 @@
       <HintPath>$(RimWorldManaged)/netstandard.dll</HintPath>
       <Private>true</Private>
     </Reference>
-    <Reference Include="0Harmony">
-      <HintPath>../1.6/Libraries/0Harmony.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
   </ItemGroup>
 
 </Project>

@@ -22,7 +22,6 @@ paused, which is the mod's selling point and the source of both live user report
 | `1.6/Core/StrandedBackups.cs` | static + struct | Counts the `.rws.old` copies Commitment writes left behind. Reports, never deletes. |
 | `1.6/Core/Dialog_RenameColony.cs` | `Dialog_GiveName` | Vanilla's faction naming dialog, opened from the settings window so a rebound Commitment colony can be moved out of a slot. |
 | `Tests/` | NUnit, net472 | Not in the sln, excluded from the mod's compile items. See `Tests/README.md`. |
-| `1.6/Patches/GameComponentInjectionPatch.cs` | Harmony postfix on `Verse.Game.FillComponents` | Unreachable, see trap 9. 42 LOC. |
 | `1.6/Languages/*/Keyed/ChronoSave_Keys.xml` | keyed strings | 21 keys, nine languages, key sets verified identical. |
 
 Per frame: `Root_Play.Update` -> `Current.Game.UpdatePlay()` -> `GameComponentUtility.GameComponentUpdate()`
@@ -34,8 +33,9 @@ guards, calls `GameDataSaveLoader.SaveGame`, measures the written file, and only
 `ApplyOutcome`, which is the sole writer of `lastSaveRealTime`, `currentSaveIndex`, the toast and the
 log line. `savePending` latches across the queue window; see trap 16 for why it has to.
 
-The whole fragile surface is one Harmony patch, a postfix on the private `Verse.Game.FillComponents()`,
-and it does nothing (trap 9). No Defs, no XML patches, no `LoadFolders.xml`, no `DefOf` of its own.
+**There is no fragile surface at all as of #8.** No Harmony patches, no Harmony dependency, no Defs,
+no XML patches, no `LoadFolders.xml`, no `DefOf`. The mod is one `GameComponent` that vanilla
+constructs by itself, one `ModSettings`, and a pure decision layer beside them.
 
 ## Invariants and traps
 
@@ -97,10 +97,19 @@ project decompile number the same file differently.
    deep-serialised into every save, so twelve saves an hour evicted real letters from the history
    tab within about sixteen hours. Both toasts now pass `historical: false` explicitly. Any new
    `Messages.Message` in this mod must do the same; the default is the trap.
-9. The Harmony patch is unreachable dead code. `Verse.Game.FillComponents` already constructs every
+9. **Removed 2026-09-17 (#8). This mod now has no Harmony patches and no Harmony dependency.** The
+   one patch was unreachable dead code: `Verse.Game.FillComponents` already constructs every
    non-abstract `GameComponent` subclass with `Activator.CreateInstance(type, this)`, and
-   `GenTypes.AllActiveAssemblies` includes mod assemblies, so the postfix's `GetComponent<...>() != null`
-   guard always returns early. `harmony.PatchAll()` and the `brrainz.harmony` hard dependency buy nothing.
+   `AllSubclassesNonAbstract` filters `GenTypes.AllTypes`, which covers every loaded mod assembly
+   through `AllActiveAssemblies`, so the postfix's `GetComponent<...>() != null` guard returned early
+   every time and its log line had never appeared in anybody's log.
+
+   The patch, `PatchAll()`, the `0Harmony` references in both `.csproj` files, the vendored
+   `1.6/Libraries/0Harmony.dll` and the `brrainz.harmony` entry in `About.xml` all went in one
+   commit, which is the only safe order: dropping the patch alone leaves the install prompt, and
+   dropping the dependency while `ModEntry` still calls `PatchAll()` leaves a hard runtime dependency
+   on a library that may then be absent. **If a patch is ever needed again, all six come back
+   together.**
 10. **Fixed 2026-09-17 (#2).** Nothing consulted `permadeathMode`, so a Commitment colony silently
     gained up to 25 rollback points in the one mode whose purpose is that you cannot roll back. There
     is now a gate in `GameComponentUpdate` and a second check inside the queued closure, because the
@@ -200,7 +209,7 @@ project decompile number the same file differently.
 | ~~medium~~ | ~~Toast is `historical`~~ | fixed 2026-09-17, #5 | Both toasts pass `historical: false` |
 | ~~medium~~ | ~~No permadeath handling, one `.rws.old` per slot there~~ | fixed 2026-09-17, #2 | Gated, disclosed, and affected colonies get a letter plus a rename button |
 | medium | Name collision with user saves, orphaned slots when the max is lowered | `ChooseSaveName` | A user file named `Chronosave-3` is still overwritten. Slots above a lowered max no longer rotate but do sit on disk; so do a named colony's files after it is abandoned. Both are visible in the Load list with its own delete button, which is the argument for leaving them |
-| medium | Harmony patch unreachable, dependency unnecessary | `GameComponentInjectionPatch.cs:20` | No runtime failure; a dependency prompt and patch surface for nothing |
+| ~~medium~~ | ~~Harmony patch unreachable, dependency unnecessary~~ | fixed 2026-09-17, #8 | Patch, `PatchAll()`, both `0Harmony` references, the vendored DLL and the `About.xml` dependency all removed together |
 
 Full evidence, plus five low-severity entries, is in
 `/Users/matthewscott/Programming/rimworld/docs/recon/2026-09-17-recon-dossier.md` under `# rimworld-chrono-save`.
@@ -243,10 +252,9 @@ dotnet build rimworld-chrono-save.sln -c Release   # clean, zero warnings
 - The seam is `ChronoSaveSchedule` plus `ChronoSaveFiles`. Everything in the first is pure;
   everything in the second takes a plain path and is exercised against a temporary directory, which
   works because `System.IO` is the one part of the game's surface that is fully reachable here.
-- Still out of reach, and not a harness defect: anything reading the static `ChronoSaveMod.Settings`
-  (`:33`), anything reading `Time.realtimeSinceStartup`, all of `GameComponentUpdate`, and every
-  Harmony patch, because Harmony cannot patch on this runtime at all. Quote coverage against
-  `ChronoSaveSchedule` and `ChronoSaveFiles`, never the repo.
+- Still out of reach, and not a harness defect: anything reading the static `ChronoSaveMod.Settings`,
+  anything reading `Time.realtimeSinceStartup`, and the game-facing half of `GameComponentUpdate`.
+  Quote coverage against `ChronoSaveSchedule`, `ChronoSaveFiles` and `StrandedBackups`, never the repo.
 - **Two behaviours have no automated coverage and must be checked in game.** The `savePending` latch
   of trap 16. Set the interval to one minute and confirm exactly one status box and one written file per
   minute. A regression there shows up as duplicate saves burning two ring slots per interval. And the
@@ -265,8 +273,8 @@ dotnet build rimworld-chrono-save.sln -c Release   # clean, zero warnings
   wrong. The 22 Aug 2025 Workshop file carries `ISharpZipLib.dll` (byte-identical to the game's copy)
   and `com.rlabrecque.steamworks.net.dll` (a different build), which RimWorld loads as mod assemblies
   for all 598 subscribers, so that alone is a reason to upload again.
-- `About/About.xml` declares a hard `brrainz.harmony` dependency the code does not need, and carries no
-  `<url>`, so GPLv3 binaries ship with no source pointer.
+- `About/About.xml` no longer declares the `brrainz.harmony` dependency (#8). It still carries no
+  `<url>`, so GPLv3 binaries ship with no source pointer. Worth fixing at the next upload.
 - `Workshop/*.md` holds the nine store descriptions, but `Verse.Steam.Workshop.SetWorkshopItemDataFrom`
   calls `SteamUGC.SetItemDescription` only inside `if (creating)`, so the in-game uploader cannot
   republish them. Changing store copy needs the Steam website, which is region-blocked from this machine.
