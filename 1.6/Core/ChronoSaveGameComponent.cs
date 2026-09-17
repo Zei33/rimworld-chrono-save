@@ -81,6 +81,21 @@ namespace ChronoSave.Core
         {
             base.GameComponentUpdate();
             
+            // Only save once the game is actually being played. GameComponentUpdate also runs
+            // during the pre-game screens: Root_Entry.Update calls Current.Game.UpdateEntry,
+            // which is nothing but GameComponentUtility.GameComponentUpdate, and Current.Game
+            // exists from Page_SelectScenario onwards. Find.World, Find.WorldInterface and
+            // Current.Game are all non-null from the landing-site page, so they do not separate
+            // the two states. Saving there throws inside Verse.Game.ExposeData, whose final
+            // statement is an unguarded Find.CameraDriver.Expose(), and CameraDriver is null in
+            // the entry scene. Scribe_Deep catches that and does not rethrow, so a truncated save
+            // with an empty <maps /> and no camera is committed to disk. ProgramState is the gate
+            // vanilla uses for its own save menu item.
+            if (Current.ProgramState != ProgramState.Playing)
+            {
+                return;
+            }
+
             // Skip if not fully initialized (prevents null reference during game startup)
             if (Find.World == null || Find.WorldInterface == null || Current.Game == null)
             {
@@ -118,15 +133,29 @@ namespace ChronoSave.Core
                     return;
                 }
                 
+                if (Current.ProgramState != ProgramState.Playing)
+                {
+                    Log.Warning("[Chrono Save] Cannot save: not in play. ProgramState is " + Current.ProgramState);
+                    return;
+                }
+                
                 string saveName = GetNextChronoSaveName();
                 
                 // Queue the save operation as a long event to prevent UI freezing
                 LongEventHandler.QueueLongEvent(() =>
                 {
-                    // Final safety check inside the queued operation
+                    // Final safety check inside the queued operation. QueueLongEvent defers this,
+                    // so the player can have returned to the main menu in between, which puts
+                    // ProgramState back to Entry and nulls CameraDriver.
                     if (Current.Game == null)
                     {
                         Log.Warning("[Chrono Save] Save aborted: Current.Game became null during queue");
+                        return;
+                    }
+                    
+                    if (Current.ProgramState != ProgramState.Playing)
+                    {
+                        Log.Warning("[Chrono Save] Save aborted: left play during queue. ProgramState is " + Current.ProgramState);
                         return;
                     }
                     
