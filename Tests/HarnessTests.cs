@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using ChronoSave.Core;
 using NUnit.Framework;
@@ -57,12 +58,33 @@ namespace ChronoSave.Tests
             // and test the component directly.
             var component = new ChronoSaveGameComponent(null);
             var method = typeof(ChronoSaveGameComponent)
-                .GetMethod("GetNextChronoSaveName", BindingFlags.Instance | BindingFlags.NonPublic);
+                .GetMethod("ChooseSaveName", BindingFlags.Instance | BindingFlags.NonPublic);
 
-            Assert.That(method, Is.Not.Null, "GetNextChronoSaveName was renamed or removed.");
+            Assert.That(method, Is.Not.Null, "ChooseSaveName was renamed or removed.");
             Assert.That(
                 () => method.Invoke(component, null),
                 Throws.InnerException.TypeOf<System.NullReferenceException>());
+        }
+
+        [Test]
+        public void TheRotationSlotIsNotAFieldAndSoCannotBeScribed()
+        {
+            // The critical defect this mod had. currentSaveIndex was a field on a GameComponent, and
+            // Verse.Game.ExposeSmallComponents deep-scribes components, so the slot was written into
+            // every save the game produced while the mod was active, manual saves and vanilla
+            // autosaves included. Loading any of them rewound the ring and the mod then overwrote
+            // forward over newer chronosaves.
+            //
+            // Reintroducing any rotation state as a field would reintroduce that, so this asserts
+            // there is no instance field on the component holding an int at all. The slot is derived
+            // from the saves folder at the moment of writing, which is what vanilla's autosaver does.
+            var intFields = typeof(ChronoSaveGameComponent)
+                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .Where(f => f.FieldType == typeof(int))
+                .Select(f => f.Name)
+                .ToArray();
+
+            Assert.That(intFields, Is.Empty, "A rotation slot on the component is scribed into every save.");
         }
     }
 }

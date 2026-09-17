@@ -1,20 +1,24 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+
 namespace ChronoSave.Core
 {
     /// <summary>
-    /// The scheduling decisions behind chronosaving, expressed over plain numbers so they can be
+    /// The scheduling decisions behind chronosaving, expressed over plain values so they can be
     /// exercised without a running RimWorld.
     /// </summary>
     /// <remarks>
     /// <see cref="ChronoSaveGameComponent"/> reaches its settings through the static
     /// <c>ChronoSaveMod.Settings</c>, which is null unless the mod has actually been loaded by the
     /// game, and its timing reads <c>UnityEngine.Time.realtimeSinceStartup</c>, which is a native
-    /// call. Neither is available in a test process, so every decision that can be stated as
-    /// arithmetic lives here instead and the component passes the values in.
+    /// call. Neither is available in a test process, so every decision that can be stated over
+    /// numbers, strings and file stamps lives here instead and the component passes the values in.
     /// </remarks>
     public static class ChronoSaveSchedule
     {
         /// <summary>
-        /// The prefix every chronosave filename carries, without the slot number.
+        /// The prefix every chronosave filename carries.
         /// </summary>
         public const string SaveNamePrefix = "Chronosave-";
 
@@ -24,110 +28,13 @@ namespace ChronoSave.Core
         public const int MaxSlots = 25;
 
         /// <summary>
-        /// Builds the save filename for a slot.
+        /// The longest colony key a filename will carry.
         /// </summary>
-        /// <param name="slot">The slot number.</param>
-        /// <returns>The filename, without a directory or an extension.</returns>
-        public static string SaveNameForSlot(int slot)
-        {
-            return SaveNamePrefix + slot;
-        }
-
-        /// <summary>
-        /// Decides whether enough real time has passed for the next chronosave.
-        /// </summary>
-        /// <param name="lastSaveRealTime">Real time at which the previous chronosave was taken.</param>
-        /// <param name="nowRealTime">Real time now.</param>
-        /// <param name="intervalMinutes">The configured interval, in minutes.</param>
-        /// <returns><c>true</c> when a chronosave is due.</returns>
-        public static bool IsDue(float lastSaveRealTime, float nowRealTime, float intervalMinutes)
-        {
-            return nowRealTime - lastSaveRealTime >= intervalMinutes * 60f;
-        }
-
-        /// <summary>
-        /// Brings a slot back inside the configured range, wrapping to the first slot.
-        /// </summary>
-        /// <param name="slot">The slot to check.</param>
-        /// <param name="numberOfSaves">The configured number of slots.</param>
-        /// <returns>The slot to use.</returns>
         /// <remarks>
-        /// A <paramref name="numberOfSaves"/> of zero leaves the slot alone, which is what the loop
-        /// this replaced did: its body never ran, so it returned the slot unchanged.
+        /// Matches the limit <c>Verse.GenText.IsValidFilename</c> applies, which is what the
+        /// vanilla naming prompt enforces. A longer name reaches this code only through another mod.
         /// </remarks>
-        public static int SlotInRange(int slot, int numberOfSaves)
-        {
-            if (numberOfSaves > 0 && slot > numberOfSaves)
-            {
-                return 1;
-            }
-
-            return slot;
-        }
-
-        /// <summary>
-        /// Moves to the next slot in the ring.
-        /// </summary>
-        /// <param name="slot">The current slot.</param>
-        /// <param name="numberOfSaves">The configured number of slots.</param>
-        /// <returns>The next slot, wrapping to the first.</returns>
-        public static int AdvanceSlot(int slot, int numberOfSaves)
-        {
-            var next = slot + 1;
-            if (next > numberOfSaves)
-            {
-                return 1;
-            }
-
-            return next;
-        }
-
-        /// <summary>
-        /// Chooses the slot for the next chronosave after an attempt that finished.
-        /// </summary>
-        /// <param name="outcome">What the finished attempt did.</param>
-        /// <param name="slot">The slot that attempt used.</param>
-        /// <param name="numberOfSaves">The configured number of slots.</param>
-        /// <returns>The slot to hold going forward.</returns>
-        /// <remarks>
-        /// Only a verified save moves the ring on. A failed one holds its slot deliberately: the
-        /// file at that path is already spoiled, because <c>SafeSaver</c> moved the previous good
-        /// version to <c>.old</c> and deleted it (<c>leaveOldFile</c> is
-        /// <c>Find.GameInfo.permadeathMode</c>, false outside Commitment mode). Holding confines a
-        /// repeating fault to the one slot it has already ruined. Advancing would let it walk the
-        /// ring and destroy every chronosave the player has, one per interval.
-        ///
-        /// An aborted attempt wrote nothing, so there is nothing to move on from.
-        /// </remarks>
-        public static int NextSlot(ChronoSaveOutcome outcome, int slot, int numberOfSaves)
-        {
-            if (outcome != ChronoSaveOutcome.Succeeded)
-            {
-                return slot;
-            }
-
-            return AdvanceSlot(slot, numberOfSaves);
-        }
-
-        /// <summary>
-        /// Repairs a slot number read from a save file.
-        /// </summary>
-        /// <param name="slot">The slot as loaded.</param>
-        /// <returns>The slot to use.</returns>
-        /// <remarks>
-        /// Bounded by <see cref="MaxSlots"/> rather than by the configured number of saves, which is
-        /// the behaviour this replaced. A slot inside the hard limit but above the player's current
-        /// setting survives here and is brought into range later by <see cref="SlotInRange"/>.
-        /// </remarks>
-        public static int SanitiseLoadedSlot(int slot)
-        {
-            if (slot < 1 || slot > MaxSlots)
-            {
-                return 1;
-            }
-
-            return slot;
-        }
+        public const int MaxColonyKeyLength = 40;
 
         /// <summary>
         /// How long to wait before retrying after an attempt that was called off before writing.
@@ -148,6 +55,242 @@ namespace ChronoSave.Core
         /// The denominator of the smallest fraction of the previous good save a new one may be.
         /// </summary>
         public const long PlausibleSaveShrinkDenominator = 4L;
+
+        /// <summary>
+        /// Characters never allowed in a colony key.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately a fixed set rather than <c>Path.GetInvalidFileNameChars()</c>. That property
+        /// is platform dependent, and on Mono under macOS it returns only the null character and the
+        /// forward slash, so a colony name containing a colon or a quote would produce a file that
+        /// Windows cannot open. This is the set
+        /// <c>Verse.GenText.GetInvalidFilenameCharacters</c> adds on top of the platform's own,
+        /// plus the double quote, which vanilla's list omits.
+        /// </remarks>
+        private const string InvalidKeyCharacters = "/\\{}<>:*|!@#$%^&?\"";
+
+        /// <summary>
+        /// Builds the save filename for a slot in the shared pool.
+        /// </summary>
+        /// <param name="slot">The slot number.</param>
+        /// <returns>The filename, without a directory or an extension.</returns>
+        public static string SaveNameForSlot(int slot)
+        {
+            return SaveNameForSlot(null, slot);
+        }
+
+        /// <summary>
+        /// Builds the save filename for a slot in a colony's ring.
+        /// </summary>
+        /// <param name="ringKey">The colony key, or <c>null</c> for the shared pool.</param>
+        /// <param name="slot">The slot number.</param>
+        /// <returns>The filename, without a directory or an extension.</returns>
+        /// <remarks>
+        /// The pool form is the name the mod has always written, byte for byte, which is what makes
+        /// the files already on a subscriber's disk the pool rather than orphans.
+        ///
+        /// Names are only ever generated and compared here, never parsed back apart, so a key
+        /// containing a dash or a digit cannot be confused with a slot number: the key "X-2" at slot
+        /// 1 gives <c>Chronosave-X-2-1</c> and the key "X" at slot 2 gives <c>Chronosave-X-2</c>,
+        /// and those are simply different strings.
+        /// </remarks>
+        public static string SaveNameForSlot(string ringKey, int slot)
+        {
+            if (string.IsNullOrEmpty(ringKey))
+            {
+                return SaveNamePrefix + slot;
+            }
+
+            return SaveNamePrefix + ringKey + "-" + slot;
+        }
+
+        /// <summary>
+        /// Turns a colony's name into the key its chronosaves are filed under.
+        /// </summary>
+        /// <param name="colonyNameOrNull">
+        /// The colony name, or <c>null</c> when the colony has not been named yet.
+        /// </param>
+        /// <returns>The key, or <c>null</c> to use the shared pool.</returns>
+        /// <remarks>
+        /// Returning <c>null</c> for an unnamed colony is the whole migration story. A colony has no
+        /// name for its first 4.3 game days at minimum, because <c>FactionGenerator</c> skips name
+        /// generation for the player faction and the one vanilla writer is the naming prompt. Every
+        /// throwaway start therefore shares one pool and leaks no files, and only a colony the
+        /// player has committed to gets a ring of its own.
+        ///
+        /// Never pass <c>Faction.Name</c> without checking <c>Faction.HasName</c> first: the getter
+        /// falls back to the localised <c>def.LabelCap</c>, so an unnamed colony would file itself
+        /// under "New Arrivals" in English and something different in every other language.
+        /// </remarks>
+        public static string RingKeyFromColonyName(string colonyNameOrNull)
+        {
+            if (string.IsNullOrEmpty(colonyNameOrNull))
+            {
+                return null;
+            }
+
+            var builder = new StringBuilder(colonyNameOrNull.Length);
+            var pendingSeparator = false;
+
+            foreach (var character in colonyNameOrNull)
+            {
+                if (character < ' ' || character == '' || InvalidKeyCharacters.IndexOf(character) >= 0)
+                {
+                    // Matches Verse.GenText.SanitizeFilename, which joins the surviving runs with an
+                    // underscore rather than closing the gap, so "Ridge/Hold" stays two words.
+                    pendingSeparator = builder.Length > 0;
+                    continue;
+                }
+
+                if (pendingSeparator)
+                {
+                    builder.Append('_');
+                    pendingSeparator = false;
+                }
+
+                builder.Append(character);
+            }
+
+            var key = builder.ToString().Trim();
+
+            if (key.Length > MaxColonyKeyLength)
+            {
+                key = key.Substring(0, MaxColonyKeyLength);
+            }
+
+            // Trailing dots are stripped silently by Windows, which would make the name written
+            // differ from the name looked for on the next pass. Trimmed after the truncation too,
+            // because the cut can land on a space or a dot.
+            key = key.TrimEnd('.').Trim();
+
+            return key.Length == 0 ? null : key;
+        }
+
+        /// <summary>
+        /// Decides whether enough real time has passed for the next chronosave.
+        /// </summary>
+        /// <param name="lastSaveRealTime">Real time at which the previous chronosave was taken.</param>
+        /// <param name="nowRealTime">Real time now.</param>
+        /// <param name="intervalMinutes">The configured interval, in minutes.</param>
+        /// <returns><c>true</c> when a chronosave is due.</returns>
+        public static bool IsDue(float lastSaveRealTime, float nowRealTime, float intervalMinutes)
+        {
+            return nowRealTime - lastSaveRealTime >= intervalMinutes * 60f;
+        }
+
+        /// <summary>
+        /// Chooses the slot the next chronosave should be written to.
+        /// </summary>
+        /// <param name="ringKey">The colony key, or <c>null</c> for the shared pool.</param>
+        /// <param name="numberOfSaves">The configured number of slots.</param>
+        /// <param name="existingSaves">Every save file currently in the saves folder.</param>
+        /// <returns>The slot to write.</returns>
+        /// <remarks>
+        /// This is <c>RimWorld.Autosaver.NewAutosaveFileName</c>: take the first name in the set
+        /// that is not already used, otherwise the one written longest ago. Ties go to the lowest
+        /// slot, matching <c>GenCollection.MinBy</c>, whose comparison is a strict less-than so the
+        /// first candidate wins.
+        ///
+        /// Two deliberate departures from vanilla. Names are matched case-insensitively, because
+        /// <c>SaveGameFilesUtility.SavedGameNamedExists</c> compares ordinally and therefore reports
+        /// <c>chronosave-1.rws</c> as absent for <c>Chronosave-1</c> on a case-insensitive
+        /// filesystem, which is most players, and then writes over it as if the slot were free. And
+        /// a file whose timestamp could not be read is treated as the newest thing in the folder, so
+        /// it is never the one chosen for overwrite while any dated alternative exists.
+        /// </remarks>
+        public static int ChooseSlot(string ringKey, int numberOfSaves, IEnumerable<SaveFileStamp> existingSaves)
+        {
+            if (numberOfSaves < 1)
+            {
+                // Vanilla throws here, MinBy refusing an empty sequence. The settings window clamps
+                // this to 1 through 25, so it is unreachable short of a hand-edited config.
+                return 1;
+            }
+
+            var slotForName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (var slot = 1; slot <= numberOfSaves; slot++)
+            {
+                slotForName[SaveNameForSlot(ringKey, slot)] = slot;
+            }
+
+            var writtenAt = new DateTime[numberOfSaves + 1];
+            var used = new bool[numberOfSaves + 1];
+
+            if (existingSaves != null)
+            {
+                foreach (var stamp in existingSaves)
+                {
+                    if (stamp.Name == null || !slotForName.TryGetValue(stamp.Name, out var slot))
+                    {
+                        continue;
+                    }
+
+                    // Two files can map to one slot when they differ only by case on a
+                    // case-insensitive filesystem. The newer one is the one that would be read back.
+                    if (!used[slot] || stamp.LastWriteUtc > writtenAt[slot])
+                    {
+                        writtenAt[slot] = stamp.LastWriteUtc;
+                    }
+
+                    used[slot] = true;
+                }
+            }
+
+            for (var slot = 1; slot <= numberOfSaves; slot++)
+            {
+                if (!used[slot])
+                {
+                    return slot;
+                }
+            }
+
+            var oldest = 1;
+            for (var slot = 2; slot <= numberOfSaves; slot++)
+            {
+                if (writtenAt[slot] < writtenAt[oldest])
+                {
+                    oldest = slot;
+                }
+            }
+
+            return oldest;
+        }
+
+        /// <summary>
+        /// Decides whether a save name still belongs to a colony's current ring.
+        /// </summary>
+        /// <param name="saveName">The name to check.</param>
+        /// <param name="ringKey">The colony key, or <c>null</c> for the shared pool.</param>
+        /// <param name="numberOfSaves">The configured number of slots.</param>
+        /// <returns><c>true</c> when the name is one this ring would write.</returns>
+        /// <remarks>
+        /// Used to decide whether a failed chronosave may be retried into the same file. Retrying
+        /// the same name matters: the file there is already spoiled, because <c>SafeSaver</c> moved
+        /// the previous good copy to <c>.old</c> and deleted it outside Commitment mode, so writing
+        /// it again can only improve that slot. Choosing afresh would instead pick a different slot
+        /// every time, because the ruined file is now the newest in the folder, and a repeating
+        /// fault would walk the whole ring and destroy every chronosave the player has.
+        ///
+        /// The name stops belonging when the player lowers the slot count or the colony gains a
+        /// name between attempts, and the next attempt then picks a slot normally.
+        /// </remarks>
+        public static bool IsInRing(string saveName, string ringKey, int numberOfSaves)
+        {
+            if (string.IsNullOrEmpty(saveName))
+            {
+                return false;
+            }
+
+            for (var slot = 1; slot <= numberOfSaves; slot++)
+            {
+                if (string.Equals(saveName, SaveNameForSlot(ringKey, slot), StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Produces a last-save real time that puts the next chronosave a short delay away rather
@@ -203,9 +346,7 @@ namespace ChronoSave.Core
         /// map despawning. A false positive costs one warning and one repeated write; a false
         /// negative costs the player a recovery point they believe they have.
         ///
-        /// With no baseline, existence and a non-zero length are all that can be checked. That gap
-        /// closes when the ring stops being shared between colonies and a neighbouring chronosave
-        /// can be assumed to be the same colony.
+        /// With no baseline, existence and a non-zero length are all that can be checked.
         /// </remarks>
         public static bool IsPlausibleSaveSize(long savedBytes, long previousGoodBytes)
         {

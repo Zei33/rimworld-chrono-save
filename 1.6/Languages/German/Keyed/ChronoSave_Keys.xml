@@ -11,11 +11,11 @@
   <ChronoSave_IntervalTooltip>Wie oft eine Chronospeicherung erstellt werden soll, gemessen in Echtzeit-Minuten. Gültiger Bereich: 1-60 Minuten.</ChronoSave_IntervalTooltip>
   
   <ChronoSave_NumberOfSavesLabel>Anzahl der aufzubewahrenden Speicherstände: {0}</ChronoSave_NumberOfSavesLabel>
-  <ChronoSave_NumberOfSavesTooltip>Die Anzahl der Chronospeicherdateien, die aufbewahrt werden sollen. Sobald dieses Limit erreicht ist, werden die ältesten Speicherstände überschrieben.</ChronoSave_NumberOfSavesTooltip>
+  <ChronoSave_NumberOfSavesTooltip>Wie viele Chronospeicherdateien aufbewahrt werden sollen. Sobald alle Plätze belegt sind, wird die älteste Datei überschrieben. Jede benannte Kolonie hat ihren eigenen Satz an Chronospeicherungen; noch namenlose Kolonien teilen sich einen gemeinsamen Satz.</ChronoSave_NumberOfSavesTooltip>
   
   <!-- Info Section -->
   <ChronoSave_InfoHeader>Über Chrono Save</ChronoSave_InfoHeader>
-  <ChronoSave_InfoText>Chrono Save erstellt automatische Speicherstände basierend auf Echtzeit statt auf Spielzeit. Dies gewährleistet regelmäßige Speicherungen auch wenn das Spiel pausiert ist oder mit unterschiedlichen Geschwindigkeiten läuft. Chronospeicherungen sind unabhängig vom normalen Autosave-System.</ChronoSave_InfoText>
+  <ChronoSave_InfoText>Chrono Save erstellt automatische Speicherstände basierend auf Echtzeit statt auf Spielzeit. Dies gewährleistet regelmäßige Speicherungen auch wenn das Spiel pausiert ist oder mit unterschiedlichen Geschwindigkeiten läuft. Chronospeicherungen sind unabhängig vom normalen Autosave-System. Sobald du deiner Kolonie einen Namen gibst, werden ihre Chronospeicherungen nach ihr benannt, sodass verschiedene Kolonien getrennte Sätze behalten.</ChronoSave_InfoText>
   
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Erstelle Chronospeicherung...</ChronoSave_SavingMessage>

@@ -14,13 +14,14 @@ CORE FEATURES
 
 FUNCTIONALITY
 - Uses real-world time tracking instead of in-game time
-- Creates saves named "Chronosave-X" with rotating numbers
+- Creates saves named after your colony once you name it, with rotating numbers
 - Saves are standard RimWorld saves - fully compatible with all features
 - Minimal performance impact with efficient time tracking
 
 SAVE MANAGEMENT
-- Default: 10 rotating chronosaves (Chronosave-1 through Chronosave-10)
-- Automatically overwrites oldest save when limit is reached
+- Default: 10 rotating chronosaves per colony
+- Reuses the oldest slot when the limit is reached
+- Each named colony keeps its own set, so two colonies never overwrite each other
 - Configurable save count (1-25 saves)
 - Independent save files won't conflict with manual or auto saves
 

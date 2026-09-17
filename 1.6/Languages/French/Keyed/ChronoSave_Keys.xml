@@ -11,11 +11,11 @@
   <ChronoSave_IntervalTooltip>Fréquence de création d'une chronosauvegarde, mesurée en minutes réelles. Plage valide : 1-60 minutes.</ChronoSave_IntervalTooltip>
   
   <ChronoSave_NumberOfSavesLabel>Nombre de sauvegardes à conserver : {0}</ChronoSave_NumberOfSavesLabel>
-  <ChronoSave_NumberOfSavesTooltip>Le nombre de fichiers de chronosauvegarde à maintenir. Une fois cette limite atteinte, les sauvegardes les plus anciennes seront écrasées.</ChronoSave_NumberOfSavesTooltip>
+  <ChronoSave_NumberOfSavesTooltip>Le nombre de fichiers de chronosauvegarde à conserver. Lorsque tous les emplacements sont occupés, le fichier le plus ancien est écrasé. Chaque colonie que vous avez nommée conserve son propre jeu de chronosauvegardes ; les colonies que vous n'avez pas encore nommées en partagent un seul.</ChronoSave_NumberOfSavesTooltip>
   
   <!-- Info Section -->
   <ChronoSave_InfoHeader>À propos de Chrono Save</ChronoSave_InfoHeader>
-  <ChronoSave_InfoText>Chrono Save crée des sauvegardes automatiques basées sur le temps réel plutôt que sur le temps du jeu. Cela garantit des sauvegardes régulières même lorsque le jeu est en pause ou fonctionne à différentes vitesses. Les chronosauvegardes sont indépendantes du système de sauvegarde automatique normal.</ChronoSave_InfoText>
+  <ChronoSave_InfoText>Chrono Save crée des sauvegardes automatiques basées sur le temps réel plutôt que sur le temps du jeu. Cela garantit des sauvegardes régulières même lorsque le jeu est en pause ou fonctionne à différentes vitesses. Les chronosauvegardes sont indépendantes du système de sauvegarde automatique normal. Une fois votre colonie nommée, ses chronosauvegardes portent son nom, si bien que des colonies distinctes conservent des jeux distincts.</ChronoSave_InfoText>
   
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Création d'une chronosauvegarde...</ChronoSave_SavingMessage>

@@ -11,11 +11,11 @@
   <ChronoSave_IntervalTooltip>创建实时存档的频率，以现实世界分钟为单位。有效范围：1-60分钟。</ChronoSave_IntervalTooltip>
   
   <ChronoSave_NumberOfSavesLabel>保留存档数量：{0}</ChronoSave_NumberOfSavesLabel>
-  <ChronoSave_NumberOfSavesTooltip>要维护的实时存档文件数量。达到此限制后，最旧的存档将被覆盖。</ChronoSave_NumberOfSavesTooltip>
+  <ChronoSave_NumberOfSavesTooltip>要保留的实时存档文件数量。当所有存档位都已占用时，最旧的存档会被覆盖。每个已命名的殖民地都有自己的一组实时存档；尚未命名的殖民地则共用一组。</ChronoSave_NumberOfSavesTooltip>
   
   <!-- Info Section -->
   <ChronoSave_InfoHeader>关于实时存档</ChronoSave_InfoHeader>
-  <ChronoSave_InfoText>实时存档基于现实世界时间而不是游戏内时间创建自动存档。这确保了即使游戏暂停或以不同速度运行时也能定期保存。实时存档独立于正常的自动存档系统。</ChronoSave_InfoText>
+  <ChronoSave_InfoText>实时存档基于现实世界时间而不是游戏内时间创建自动存档。这确保了即使游戏暂停或以不同速度运行时也能定期保存。实时存档独立于正常的自动存档系统。为殖民地命名后，它的实时存档会以该名称命名，因此不同的殖民地各自保留独立的存档。</ChronoSave_InfoText>
   
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>正在创建实时存档...</ChronoSave_SavingMessage>

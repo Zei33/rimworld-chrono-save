@@ -11,11 +11,11 @@
   <ChronoSave_IntervalTooltip>Con qué frecuencia crear un cronoguardado, medido en minutos del mundo real. Rango válido: 1-60 minutos.</ChronoSave_IntervalTooltip>
   
   <ChronoSave_NumberOfSavesLabel>Número de guardados a mantener: {0}</ChronoSave_NumberOfSavesLabel>
-  <ChronoSave_NumberOfSavesTooltip>El número de archivos de cronoguardado a mantener. Una vez alcanzado este límite, los guardados más antiguos serán sobrescritos.</ChronoSave_NumberOfSavesTooltip>
+  <ChronoSave_NumberOfSavesTooltip>Cuántos archivos de cronoguardado conservar. Cuando todos los espacios están ocupados, se sobrescribe el más antiguo. Cada colonia a la que has puesto nombre mantiene su propio conjunto de cronoguardados; las colonias que aún no tienen nombre comparten uno solo.</ChronoSave_NumberOfSavesTooltip>
   
   <!-- Info Section -->
   <ChronoSave_InfoHeader>Acerca de Chrono Save</ChronoSave_InfoHeader>
-  <ChronoSave_InfoText>Chrono Save crea guardados automáticos basados en tiempo real en lugar de tiempo del juego. Esto garantiza guardados regulares incluso cuando el juego está pausado o funcionando a diferentes velocidades. Los cronoguardados son independientes del sistema de autoguardado normal.</ChronoSave_InfoText>
+  <ChronoSave_InfoText>Chrono Save crea guardados automáticos basados en tiempo real en lugar de tiempo del juego. Esto garantiza guardados regulares incluso cuando el juego está pausado o funcionando a diferentes velocidades. Los cronoguardados son independientes del sistema de autoguardado normal. Cuando pones nombre a tu colonia, sus cronoguardados pasan a llevar ese nombre, así que colonias distintas mantienen conjuntos separados.</ChronoSave_InfoText>
   
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Creando cronoguardado...</ChronoSave_SavingMessage>

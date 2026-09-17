@@ -11,11 +11,11 @@
   <ChronoSave_IntervalTooltip>Częstotliwość tworzenia chronozapisu, mierzona w minutach rzeczywistych. Zakres: 1-60 minut.</ChronoSave_IntervalTooltip>
   
   <ChronoSave_NumberOfSavesLabel>Liczba zapisów do przechowywania: {0}</ChronoSave_NumberOfSavesLabel>
-  <ChronoSave_NumberOfSavesTooltip>Liczba plików chronozapisów do utrzymania. Po osiągnięciu tego limitu najstarsze zapisy zostaną nadpisane.</ChronoSave_NumberOfSavesTooltip>
+  <ChronoSave_NumberOfSavesTooltip>Liczba plików chronozapisów do przechowywania. Gdy wszystkie miejsca są zajęte, najstarszy plik zostaje nadpisany. Każda nazwana kolonia ma własny zestaw chronozapisów; kolonie bez nazwy korzystają ze wspólnego zestawu.</ChronoSave_NumberOfSavesTooltip>
   
   <!-- Info Section -->
   <ChronoSave_InfoHeader>O Chrono Save</ChronoSave_InfoHeader>
-  <ChronoSave_InfoText>Chrono Save tworzy automatyczne zapisy oparte na czasie rzeczywistym, a nie czasie gry. Zapewnia to regularne zapisy nawet gdy gra jest wstrzymana lub działa z różną prędkością. Chronozapisy są niezależne od normalnego systemu autozapisu.</ChronoSave_InfoText>
+  <ChronoSave_InfoText>Chrono Save tworzy automatyczne zapisy oparte na czasie rzeczywistym, a nie czasie gry. Zapewnia to regularne zapisy nawet gdy gra jest wstrzymana lub działa z różną prędkością. Chronozapisy są niezależne od normalnego systemu autozapisu. Gdy nadasz kolonii nazwę, jej chronozapisy będą nosić jej nazwę, więc różne kolonie mają osobne zestawy.</ChronoSave_InfoText>
   
   <!-- In-Game Messages -->
   <ChronoSave_SavingMessage>Tworzenie chronozapisu...</ChronoSave_SavingMessage>

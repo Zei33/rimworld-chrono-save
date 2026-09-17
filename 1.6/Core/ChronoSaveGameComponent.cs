@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -18,10 +16,16 @@ namespace ChronoSave.Core
         private float lastSaveRealTime;
         
         /// <summary>
-        /// Current chronosave index (1 to NumberOfSaves).
+        /// The chronosave name a failed attempt should be retried into, or <c>null</c>.
         /// </summary>
-        private int currentSaveIndex = 1;
-        
+        /// <remarks>
+        /// Deliberately not scribed. It exists so a slot that has already been spoiled is rewritten
+        /// rather than abandoned: choosing afresh would skip it, because the ruined file is now the
+        /// newest in the folder, and a repeating fault would then walk the ring and destroy every
+        /// chronosave the player has instead of ruining the one slot over and over.
+        /// </remarks>
+        private string pendingRetryName;
+
         /// <summary>
         /// Whether we've performed the initial time sync after loading.
         /// </summary>
@@ -179,20 +183,21 @@ namespace ChronoSave.Core
                     return;
                 }
                 
-                string saveName = GetNextChronoSaveName();
-
                 // Captured so the closure judges the attempt against the state it was queued for.
                 // Identity, not just non-null: loading another colony in the window between
                 // queueing and executing replaces Current.Game, and a null check does not see that.
-                int queuedSlot = currentSaveIndex;
                 Game queuedGame = Current.Game;
 
                 // Queue the save operation as a long event to prevent UI freezing. Nothing after
-                // this point reports anything: the message, the log line, the timer and the slot
-                // all live in ApplyOutcome, which only the closure reaches, and only once the write
-                // has been attempted and measured.
+                // this point reports anything: the message, the log line and the timer all live in
+                // ApplyOutcome, which only the closure reaches, and only once the write has been
+                // attempted and what landed on disk measured.
                 LongEventHandler.QueueLongEvent(() =>
                 {
+                    // Declared out here so a throw after the name was chosen still knows which file
+                    // it ruined, and can therefore pin the retry to it.
+                    string saveName = null;
+
                     try
                     {
                         // Final safety checks inside the queued operation. QueueLongEvent defers
@@ -201,24 +206,31 @@ namespace ChronoSave.Core
                         // here means the state changed inside that window.
                         if (!ReferenceEquals(Current.Game, queuedGame))
                         {
-                            ApplyOutcome(ChronoSaveOutcome.Aborted, queuedSlot, saveName,
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, null,
                                 "the game was replaced during the queue");
                             return;
                         }
 
                         if (Current.ProgramState != ProgramState.Playing)
                         {
-                            ApplyOutcome(ChronoSaveOutcome.Aborted, queuedSlot, saveName,
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, null,
                                 "left play during the queue, ProgramState is " + Current.ProgramState);
                             return;
                         }
 
                         if (GameDataSaveLoader.SavingIsTemporarilyDisabled)
                         {
-                            ApplyOutcome(ChronoSaveOutcome.Aborted, queuedSlot, saveName,
+                            ApplyOutcome(ChronoSaveOutcome.Aborted, null,
                                 "saving became temporarily disabled during the queue");
                             return;
                         }
+
+                        // The name is chosen here, not at queue time, and that placement is the
+                        // point of the fix. It reads the faction and the saves folder from the same
+                        // Game that is about to be serialised, it sees any manual save, vanilla
+                        // autosave or deletion that happened while this event waited, and an
+                        // attempt that aborts above has changed nothing on disk or in memory.
+                        saveName = ChooseSaveName();
 
                         // Returns void and swallows every exception into Log.Error, so nothing after
                         // this can learn from a thrown exception whether it worked.
@@ -231,17 +243,17 @@ namespace ChronoSave.Core
                         if (plausible)
                         {
                             lastGoodSaveBytes = writtenBytes;
-                            ApplyOutcome(ChronoSaveOutcome.Succeeded, queuedSlot, saveName, detail);
+                            ApplyOutcome(ChronoSaveOutcome.Succeeded, saveName, detail);
                             return;
                         }
 
-                        ApplyOutcome(ChronoSaveOutcome.Failed, queuedSlot, saveName, detail);
+                        ApplyOutcome(ChronoSaveOutcome.Failed, saveName, detail);
                     }
                     catch (Exception ex)
                     {
-                        // SaveGame itself cannot reach here. The path lookup, the measurement and
-                        // the message can.
-                        ApplyOutcome(ChronoSaveOutcome.Failed, queuedSlot, saveName, "chronosave threw: " + ex);
+                        // SaveGame itself cannot reach here. The faction read, the folder listing,
+                        // the path lookup, the measurement and the message can.
+                        ApplyOutcome(ChronoSaveOutcome.Failed, saveName, "chronosave threw: " + ex);
                     }
                     finally
                     {
@@ -261,19 +273,56 @@ namespace ChronoSave.Core
         }
 
         /// <summary>
-        /// Applies the timer, slot, message and log consequences of a finished chronosave attempt.
+        /// Chooses the filename for the chronosave about to be written.
+        /// </summary>
+        /// <returns>A save name, without a directory or an extension.</returns>
+        /// <remarks>
+        /// The ring is scoped to the colony, once the colony has a name. Until then it is the shared
+        /// pool, whose names are exactly the flat <c>Chronosave-N</c> the mod has always written, so
+        /// the files already on a subscriber's disk are adopted rather than orphaned. A colony has
+        /// no name for at least its first 4.3 game days, which covers every throwaway start, so only
+        /// a colony the player has committed to takes a set of files of its own.
+        ///
+        /// <c>Faction.HasName</c> is checked before <c>Faction.Name</c> because the getter falls
+        /// back to the localised <c>def.LabelCap</c>, and filing saves under "New Arrivals" would
+        /// put a colony in a different ring depending on the player's language.
+        /// </remarks>
+        private string ChooseSaveName()
+        {
+            Faction player = Faction.OfPlayerSilentFail;
+            string ringKey = ChronoSaveSchedule.RingKeyFromColonyName(
+                player != null && player.HasName ? player.Name : null);
+            int numberOfSaves = Settings.NumberOfSaves;
+
+            // A previous attempt spoiled this file, so rewrite it rather than leaving it behind and
+            // moving on. It stops belonging to the ring when the slot count is lowered or the
+            // colony gains a name, and then a slot is chosen normally.
+            if (ChronoSaveSchedule.IsInRing(pendingRetryName, ringKey, numberOfSaves))
+            {
+                return pendingRetryName;
+            }
+
+            int slot = ChronoSaveSchedule.ChooseSlot(
+                ringKey,
+                numberOfSaves,
+                ChronoSaveFiles.Snapshot(GenFilePaths.SavedGamesFolderPath));
+
+            return ChronoSaveSchedule.SaveNameForSlot(ringKey, slot);
+        }
+
+        /// <summary>
+        /// Applies the timer, retry, message and log consequences of a finished chronosave attempt.
         /// </summary>
         /// <param name="outcome">What the attempt actually did.</param>
-        /// <param name="slot">The slot the attempt was made against.</param>
-        /// <param name="saveName">The filename the attempt used.</param>
+        /// <param name="saveName">The filename the attempt used, or <c>null</c> if it never got one.</param>
         /// <param name="detail">Detail for the log only; never shown to the player.</param>
         /// <remarks>
-        /// The only place any of those four things happen. Every outcome writes
-        /// <c>lastSaveRealTime</c>, including the ones that failed, because the latch clears as this
-        /// returns and the frame update runs again immediately: leaving the timer alone would make
-        /// the whole cycle repeat every few frames.
+        /// The only place any of those things happen. Every outcome writes <c>lastSaveRealTime</c>,
+        /// including the ones that failed, because the latch clears as this returns and the frame
+        /// update runs again immediately: leaving the timer alone would make the whole cycle repeat
+        /// every few frames.
         /// </remarks>
-        private void ApplyOutcome(ChronoSaveOutcome outcome, int slot, string saveName, string detail)
+        private void ApplyOutcome(ChronoSaveOutcome outcome, string saveName, string detail)
         {
             ChronoSaveResolution resolution = ChronoSaveSchedule.Resolve(
                 outcome,
@@ -281,7 +330,18 @@ namespace ChronoSave.Core
                 Settings.SaveIntervalMinutes);
 
             lastSaveRealTime = resolution.LastSaveRealTime;
-            currentSaveIndex = ChronoSaveSchedule.NextSlot(outcome, slot, Settings.NumberOfSaves);
+
+            if (outcome == ChronoSaveOutcome.Succeeded)
+            {
+                pendingRetryName = null;
+            }
+            else if (outcome == ChronoSaveOutcome.Failed)
+            {
+                pendingRetryName = saveName;
+            }
+
+            // An abort deliberately leaves pendingRetryName alone: nothing was written, so a slot
+            // still owed a rewrite is still owed one.
 
             if (resolution.ShowSuccessMessage)
             {
@@ -300,26 +360,20 @@ namespace ChronoSave.Core
 
             if (resolution.ShowFailureMessage)
             {
-                Messages.Message("ChronoSave_SaveFailedMessage".Translate(saveName), MessageTypeDefOf.NegativeEvent, historical: false);
-                Log.Error($"[Chrono Save] {saveName} did not verify: {detail}. The slot is kept and will be rewritten.");
+                // No name means the attempt threw before it had one, so there is no file for the
+                // player to go and look at and nothing useful a toast could say.
+                if (saveName != null)
+                {
+                    Messages.Message("ChronoSave_SaveFailedMessage".Translate(saveName), MessageTypeDefOf.NegativeEvent, historical: false);
+                }
+
+                Log.Error($"[Chrono Save] Chronosave {saveName ?? "(unnamed)"} did not verify: {detail}. It will be rewritten on the next attempt.");
                 return;
             }
 
-            Log.Warning($"[Chrono Save] Chronosave called off before writing: {detail}. The slot is unchanged.");
+            Log.Warning($"[Chrono Save] Chronosave called off before writing: {detail}.");
         }
 
-        /// <summary>
-        /// Gets the name for the next chronosave file.
-        /// </summary>
-        private string GetNextChronoSaveName()
-        {
-            // Lowering NumberOfSaves can leave the stored slot above the new limit, so bring it back
-            // into range first. The loop this replaced did the same thing the long way round: it
-            // returned on its first iteration in every case bar that one.
-            currentSaveIndex = ChronoSaveSchedule.SlotInRange(currentSaveIndex, Settings.NumberOfSaves);
-            return ChronoSaveSchedule.SaveNameForSlot(currentSaveIndex);
-        }
-        
         /// <summary>
         /// Resets the save timer to prevent immediate saves after loading.
         /// </summary>
@@ -332,25 +386,33 @@ namespace ChronoSave.Core
             // queued against the previous one can still be ours.
             savePending = false;
             lastGoodSaveBytes = 0L;
+            pendingRetryName = null;
         }
         
         /// <summary>
         /// Saves and loads component data.
         /// </summary>
+        /// <remarks>
+        /// The rotation slot is deliberately not here any more, and must not come back.
+        /// <c>Verse.Game.ExposeSmallComponents</c> deep-scribes <c>components</c>, so a field on
+        /// this class is written into every save the game produces while the mod is active,
+        /// including manual saves and vanilla autosaves. Loading any of them restored whatever slot
+        /// was current when that file was written, which rewound the ring and then overwrote forward
+        /// over newer chronosaves. The slot is now derived from the saves folder at the moment of
+        /// writing, which is what vanilla's autosaver does.
+        ///
+        /// The orphaned <c>currentSaveIndex</c> node already sitting in existing saves is harmless:
+        /// <c>Scribe_Values.Look</c> indexes the labels the code asks for and never enumerates
+        /// children, so an unread node is simply not read, and it disappears the next time that save
+        /// is written.
+        ///
+        /// <c>lastSaveRealTime</c> stays unscribed too, because it should reset on load.
+        /// </remarks>
         public override void ExposeData()
         {
             base.ExposeData();
-            
-            Scribe_Values.Look(ref currentSaveIndex, "currentSaveIndex", 1);
+
             Scribe_Values.Look(ref hasInitialized, "hasInitialized", false);
-            
-            // Don't save lastSaveRealTime as it should reset on load
-            
-            // Validate loaded values
-            if (Scribe.mode == LoadSaveMode.LoadingVars)
-            {
-                currentSaveIndex = ChronoSaveSchedule.SanitiseLoadedSlot(currentSaveIndex);
-            }
         }
     }
 }

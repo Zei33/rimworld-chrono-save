@@ -15,7 +15,7 @@ Chrono Save creates automatic saves based on real-world time rather than in-game
 - **Configurable Settings**: Adjust save interval and number of saves to keep
 - **Independent System**: Works alongside vanilla autosaves without interference
 - **Pause-Friendly**: Continues saving even when game is paused
-- **Rotating Saves**: Maintains a set number of saves before overwriting oldest
+- **Rotating Saves**: Keeps a set number of saves per colony, reusing the oldest slot first
 - **Full Localization**: Supports 9 languages
 
 ## Installation
@@ -36,14 +36,16 @@ Access settings through: **Options → Mod Settings → Chrono Save**
 
 ## How It Works
 
-The mod tracks real-world time using Unity's time system. When the configured interval passes, it creates a save file named "Chronosave-X" where X rotates from 1 to your configured maximum.
+The mod tracks real-world time using Unity's time system. When the configured interval passes, it looks at your Saves folder and writes to the first unused slot, or if they are all in use, the one written longest ago. That is the same rule RimWorld's own autosaver follows.
 
-For example, with default settings:
-- Chronosave-1 (created at 0:05)
-- Chronosave-2 (created at 0:10)
+Each colony you have named keeps its own set of files, named after it. Colonies you have not named yet share one set, which is also where chronosaves from earlier versions of the mod live, so nothing already on disk is stranded.
+
+For example, with default settings and a colony named Crimson Fleet:
+- Chronosave-Crimson Fleet-1 (created at 0:05)
+- Chronosave-Crimson Fleet-2 (created at 0:10)
 - ...
-- Chronosave-10 (created at 0:50)
-- Chronosave-1 (overwrites at 0:55)
+- Chronosave-Crimson Fleet-10 (created at 0:50)
+- Chronosave-Crimson Fleet-1 (the oldest, reused at 0:55)
 
 ## Compatibility
 

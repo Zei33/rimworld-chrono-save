@@ -10,8 +10,13 @@
 
 ### Rotating Save System
 - Maintains a configurable number of save files (default: 10)
-- Save files named "Chronosave-1" through "Chronosave-X"
-- Automatically overwrites oldest saves when limit is reached
+- Once a colony is named, its saves are "Chronosave-YourColony-1" through "Chronosave-YourColony-X",
+  so two colonies never overwrite each other
+- Before a colony is named, which in RimWorld takes at least 4.3 in-game days, its saves go to a
+  shared set named "Chronosave-1" through "Chronosave-X". Existing chronosaves from earlier versions
+  are that shared set, so nothing already on disk is stranded
+- The slot to write is read from the Saves folder each time: the first unused one, otherwise the one
+  written longest ago. This is the same rule RimWorld's own autosaver uses
 - Preserves recent save history without cluttering save folder
 
 ### Mod Settings

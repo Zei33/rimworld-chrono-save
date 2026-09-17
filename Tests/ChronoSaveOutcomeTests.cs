@@ -102,34 +102,6 @@ namespace ChronoSave.Tests
         }
 
         [Test]
-        public void NextSlot_OnlyAVerifiedSaveMovesTheRingOn()
-        {
-            Assert.That(ChronoSaveSchedule.NextSlot(ChronoSaveOutcome.Succeeded, 3, 10), Is.EqualTo(4));
-        }
-
-        [Test]
-        public void NextSlot_AFailedSaveKeepsItsSlot()
-        {
-            // The direct regression test for "an aborted save still burns a slot". It also confines
-            // a repeating fault: the file at slot 3 is already spoiled, because SafeSaver moved the
-            // previous good version to .old and deleted it. Advancing would let the fault walk the
-            // ring and destroy every chronosave the player has, one per interval.
-            Assert.That(ChronoSaveSchedule.NextSlot(ChronoSaveOutcome.Failed, 3, 10), Is.EqualTo(3));
-        }
-
-        [Test]
-        public void NextSlot_AnAbortedSaveKeepsItsSlot()
-        {
-            Assert.That(ChronoSaveSchedule.NextSlot(ChronoSaveOutcome.Aborted, 3, 10), Is.EqualTo(3));
-        }
-
-        [Test]
-        public void NextSlot_WrapsTheRingOnSuccess()
-        {
-            Assert.That(ChronoSaveSchedule.NextSlot(ChronoSaveOutcome.Succeeded, 10, 10), Is.EqualTo(1));
-        }
-
-        [Test]
         public void RetryBaseline_IsNotDueImmediately()
         {
             var baseline = ChronoSaveSchedule.RetryBaseline(Now, FiveMinutes, ChronoSaveSchedule.FailureRetrySeconds);

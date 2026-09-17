@@ -14,10 +14,13 @@ paused, which is the mod's selling point and the source of both live user report
 | `1.6/ModEntry.cs` | `ChronoSaveMod : Mod` | Holds the static `Settings`, calls `harmony.PatchAll()` with id `com.zei33.chronosave`, delegates the settings window. 55 LOC. |
 | `1.6/Core/ChronoSaveGameComponent.cs` | `ChronoSaveGameComponent : GameComponent` | All scheduling and saving. 207 LOC. |
 | `1.6/Core/ChronoSaveSettings.cs` | `ChronoSaveSettings : ModSettings` | Three settings plus the IMGUI page. 118 LOC. |
-| `1.6/Core/ChronoSaveSchedule.cs` | static | The scheduling arithmetic, extracted 2026-09-17 so it can be tested without the game. No game state. |
+| `1.6/Core/ChronoSaveSchedule.cs` | static | Every scheduling decision that can be stated over plain values, so it can be tested without the game. No game state. |
+| `1.6/Core/ChronoSaveFiles.cs` | static | The two filesystem questions, over a plain path: list the saves folder, measure a written file. Never calls `GenFilePaths`, which is what makes it testable. |
+| `1.6/Core/ChronoSaveOutcome.cs` | enum + struct | What a finished attempt did, and what follows from it. |
+| `1.6/Core/SaveFileStamp.cs` | struct | A save file as the rotation sees it: base name and `LastWriteTimeUtc`. |
 | `Tests/` | NUnit, net472 | Not in the sln, excluded from the mod's compile items. See `Tests/README.md`. |
 | `1.6/Patches/GameComponentInjectionPatch.cs` | Harmony postfix on `Verse.Game.FillComponents` | Unreachable, see trap 9. 42 LOC. |
-| `1.6/Languages/*/Keyed/ChronoSave_Keys.xml` | keyed strings | 11 keys, nine languages, key sets verified identical. |
+| `1.6/Languages/*/Keyed/ChronoSave_Keys.xml` | keyed strings | 12 keys, nine languages, key sets verified identical. |
 
 Per frame: `Root_Play.Update` -> `Current.Game.UpdatePlay()` -> `GameComponentUtility.GameComponentUpdate()`
 -> `ChronoSaveGameComponent.GameComponentUpdate()` (`:80`). `Root_Entry.Update` reaches the same method
@@ -52,13 +55,22 @@ project decompile number the same file differently.
 4. Vanilla needs no more than that because `Autosaver.AutosaverTick()` is reached only from
    `TickManager.DoSingleTick()`, which does not run while paused. This mod removes that invariant
    deliberately and does not replace it.
-5. Rotation is a serialised counter, not oldest-file-first. `currentSaveIndex` goes through `ExposeData`
-   (`:192`), so loading `Chronosave-4` resumes at slot 5 and overwrites the newest snapshots, and a new
-   colony starts at 1 and walks over the previous colony's whole ring. Vanilla's
-   `Autosaver.NewAutosaveFileName()` takes an unused name then `MinBy(LastWriteTime)`; this never stats the disk.
-6. Shipped copy contradicts trap 5. `About/About.xml:23`, `README.md:18`, `Documentation/Features.md:14`,
-   the key `ChronoSave_NumberOfSavesTooltip` and the equivalent line in all nine `Workshop/*.md` files
-   claim the oldest save is overwritten. Fix the code or fix the copy, but do not leave them disagreeing.
+5. **Fixed 2026-09-17 (#1).** Rotation used to be a serialised counter. `currentSaveIndex` went
+   through `ExposeData`, and `Game.ExposeSmallComponents` deep-scribes `components`, so the slot was
+   written into **every** save the game produced while the mod was active, manual saves and vanilla
+   autosaves included. Loading any of them rewound the ring and the mod overwrote forward over newer
+   chronosaves; and because names were globally flat, a new colony started at slot 1 and walked over
+   the previous colony's whole set. It is now `Autosaver.NewAutosaveFileName`'s algorithm over a
+   listing of the saves folder, taken inside the queued closure: first unused slot, else oldest by
+   `LastWriteTimeUtc`, ties to the lowest slot. **Never put rotation state back on the component**;
+   `HarnessTests.TheRotationSlotIsNotAFieldAndSoCannotBeScribed` asserts there is no `int` instance
+   field at all.
+6. Resolved 2026-09-17 in the true direction. `About/About.xml:23`, `README.md:18`,
+   `Documentation/Features.md:14`, the key `ChronoSave_NumberOfSavesTooltip` and the equivalent line
+   in all nine `Workshop/*.md` files all claimed the oldest save is overwritten, which was false.
+   Trap 5's fix made it true rather than the copy being cut back. The two keys now also say that each
+   named colony keeps its own set. The `Workshop/*.md` copy still needs the per-colony sentence, and
+   the in-game uploader cannot republish a description, so that is website work; see `ship-mod`.
 7. **Fixed 2026-09-17 (#4).** The success toast used to lie: `GameDataSaveLoader.SaveGame` returns
    `void` and swallows everything into `Log.Error`, and the `Log.Message` ran before the queued event
    had executed at all. The toast, the log line, the timer and the slot advance now all live in
@@ -100,9 +112,11 @@ project decompile number the same file differently.
 14. A failed guard defers the save, it does not cancel it: `GameComponentUpdate` returns before touching
     `lastSaveRealTime`, so the interval condition stays true and the save fires on the first frame the
     guard clears. That is already what Huehuecoyotl asked for. Preserve it when adding guards.
-15. `GetNextChronoSaveName` reads as if it searches for a free slot. It does not; it returns on the first
-    iteration for any `NumberOfSaves >= 1`, and the real wrap is the separate increment at `:139-143`.
-    Change the rotation policy in both places or neither.
+15. Gone as of #1, and the shape is worth remembering. `GetNextChronoSaveName` read as if it searched
+    for a free slot and did not: it returned on its first iteration for any `NumberOfSaves >= 1`, and
+    the real wrap was a separate increment elsewhere, so the policy lived in two places that could
+    disagree. There is now one place, `ChooseSaveName`, and it runs inside the queued closure so the
+    faction, the folder listing and the write all see the same `Game`.
 16. **A queued long event does not pause the game.** This is the least obvious thing in the file and
     it decides the shape of the save path. `LongEventHandler.ShouldWaitForEvent` returns **false**
     while the current event uses the standard window, and `UseStandardWindow` is
@@ -125,12 +139,12 @@ project decompile number the same file differently.
 | Sev | Defect | file:line | What breaks |
 |---|---|---|---|
 | critical | Saves fire on the pre-game entry screens | `ChronoSaveGameComponent.cs:85` | `Game.ExposeData` -> `Find.CameraDriver.Expose()` NREs (the entry scene nulls `cameraDriverInt`): red error plus a modal ProblemSavingFile dialog every interval, slot burned, success toast still posted |
+| ~~high~~ | ~~Rotation is a serialised counter, not oldest-first~~ | fixed 2026-09-17, #1 | The slot is derived from the saves folder at write time and the ring is scoped per named colony |
 | high | No guard for targeting, float menus or paused interactions | `:91` | Save captures a half-finished interaction; neither `Targeter` nor `WorldTargeter` is serialised, so the pending callback cannot be restored |
-| high | Rotation is a serialised counter, not oldest-first | `:156`, `:192` | A new colony destroys the previous colony's ring; loading an old chronosave overwrites the newest ones |
 | ~~medium~~ | ~~Success message posted even when the save threw~~ | fixed 2026-09-17, #4 | Reporting now happens inside the queued closure, after the write, and after the written file has been measured |
 | ~~medium~~ | ~~Toast is `historical`~~ | fixed 2026-09-17, #5 | Both toasts pass `historical: false` |
 | medium | No permadeath handling, one `.rws.old` per slot there | `:121` | Commitment mode silently gains rollback points |
-| medium | Name collision with user saves, orphaned slots when the max is lowered | `:161` | A user file named `Chronosave-3` is overwritten; slots above the new max sit on disk forever |
+| medium | Name collision with user saves, orphaned slots when the max is lowered | `ChooseSaveName` | A user file named `Chronosave-3` is still overwritten. Slots above a lowered max no longer rotate but do sit on disk; so do a named colony's files after it is abandoned. Both are visible in the Load list with its own delete button, which is the argument for leaving them |
 | medium | Harmony patch unreachable, dependency unnecessary | `GameComponentInjectionPatch.cs:20` | No runtime failure; a dependency prompt and patch surface for nothing |
 
 Full evidence, plus five low-severity entries, is in
@@ -167,18 +181,20 @@ dotnet build rimworld-chrono-save.sln -c Release   # clean, zero warnings
   `ChronoSave.csproj` now carries a real HintPath, so a new warning is a real regression.
 - `./build.sh` builds Release then deletes and replaces `$RimWorldDir/Mods/ChronoSave`. Destructive, so
   never run it to check something.
-- Tests: `dotnet test Tests/ChronoSave.Tests.csproj`, 18 passing as of 2026-09-17, against the real
+- Tests: `dotnet test Tests/ChronoSave.Tests.csproj`, 74 passing as of 2026-09-17, against the real
   `Assembly-CSharp.dll`. Deliberately outside `rimworld-chrono-save.sln` so the solution build stays
   mod-only and warning-free, and `Compile Remove="Tests/**"` in `ChronoSave.csproj` keeps the test
   sources out of the shipped DLL. `Tests/README.md` has the detail.
-- The seam is `ChronoSaveSchedule`: `IsDue`, `SaveNameForSlot`, `SlotInRange`, `AdvanceSlot` and
-  `SanitiseLoadedSlot`, all pure. The extraction preserved behaviour exactly, including the mutation
-  `GetNextChronoSaveName` performs on `currentSaveIndex`, so trap 15 still holds and the rotation
-  policy still lives in two places. `chrono-save#4` and `#1` land here.
+- The seam is `ChronoSaveSchedule` plus `ChronoSaveFiles`. Everything in the first is pure;
+  everything in the second takes a plain path and is exercised against a temporary directory, which
+  works because `System.IO` is the one part of the game's surface that is fully reachable here.
 - Still out of reach, and not a harness defect: anything reading the static `ChronoSaveMod.Settings`
   (`:33`), anything reading `Time.realtimeSinceStartup`, all of `GameComponentUpdate`, and every
   Harmony patch, because Harmony cannot patch on this runtime at all. Quote coverage against
-  `ChronoSaveSchedule`, never the repo.
+  `ChronoSaveSchedule` and `ChronoSaveFiles`, never the repo.
+- **One behaviour has no automated coverage and must be checked in game**: the `savePending` latch of
+  trap 16. Set the interval to one minute and confirm exactly one status box and one written file per
+  minute. A regression there shows up as duplicate saves burning two ring slots per interval.
 - In-game: 1.6.4871 only. Set the interval to 1 minute to exercise a rotation quickly. To reproduce the
   entry-screen defect, start a new colony, let world generation finish, then sit on the landing-site page
   past the interval. Use the `refsrc` skill for game API lookups.
