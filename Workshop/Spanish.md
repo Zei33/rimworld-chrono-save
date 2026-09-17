@@ -10,20 +10,23 @@ Chrono Save [1.6] (Chrono Save)
 [*] Funciona independientemente de los guardados automáticos vanilla - sin interferencia
 [*] Continúa guardando incluso cuando el juego está pausado o a diferentes velocidades
 [*] Sistema de guardado rotativo evita la acumulación de archivos de guardado
+[*] Sin parches de Harmony y sin dependencias
 [/list]
 
 [h2]FUNCIONALIDAD[/h2]
 [list]
 [*] Usa seguimiento de tiempo real en lugar de tiempo del juego
-[*] Crea guardados llamados "Chronosave-X" con números rotativos
+[*] Cuando pones nombre a tu colonia, los guardados llevan ese nombre, con números rotativos
 [*] Los guardados son guardados estándar de RimWorld - totalmente compatibles con todas las características
+[*] Cada cronoguardado se comprueba después de escribirse, y se te avisa si alguno parece incompleto
 [*] Impacto mínimo en el rendimiento con seguimiento de tiempo eficiente
 [/list]
 
 [h2]GESTIÓN DE GUARDADOS[/h2]
 [list]
-[*] Por defecto: 10 chronosaves rotativos (Chronosave-1 hasta Chronosave-10)
+[*] Por defecto: 10 cronoguardados rotativos por colonia
 [*] Sobrescribe automáticamente el guardado más antiguo cuando se alcanza el límite
+[*] Cada colonia con nombre mantiene su propio conjunto, así que dos colonias nunca se sobrescriben entre sí; las colonias que aún no tienen nombre comparten uno solo
 [*] Recuento de guardados configurable (1-25 guardados)
 [*] Los archivos de guardado independientes no entran en conflicto con guardados manuales o automáticos
 [/list]
@@ -33,7 +36,7 @@ Chrono Save [1.6] (Chrono Save)
 [*] Intervalo de guardado: Ajustable de 1 a 60 minutos
 [*] Recuento de guardados: Elige cuántos chronosaves mantener
 [*] Interruptor activar/desactivar: Activa o desactiva el sistema según sea necesario
-[*] Accede a la configuración a través de Opciones → Configuración de Mods → Chrono Save
+[*] Accede a la configuración a través de Opciones, luego opciones de mods, luego Chrono Save
 [/list]
 
 [h2]DISEÑO AMIGABLE CON LA PAUSA[/h2]
@@ -41,6 +44,14 @@ Chrono Save [1.6] (Chrono Save)
 [*] Los guardados continúan incluso cuando el juego está pausado
 [*] Funciona a todas las velocidades del juego (1x, 2x, 3x)
 [*] Perfecto para sesiones largas de planificación o períodos AFK
+[*] Espera mientras seleccionas un objetivo, eliges el destino de una lanzadera, planificas la ruta de una caravana o lees un cuadro de diálogo, y guarda en cuanto terminas
+[/list]
+
+[h2]MODO COMPROMETIDO[/h2]
+[list]
+[*] No se crea ningún cronoguardado mientras hay cargada una colonia en Modo comprometido
+[*] Ese modo se basa en un único archivo de guardado, y cada copia extra es una forma de volver atrás
+[*] No hay ninguna opción para cambiarlo
 [/list]
 
 [hr][/hr] 

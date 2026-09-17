@@ -10,20 +10,23 @@ Verlieren Sie nie wieder Fortschritte! Chrono Speichern fügt ein Echtzeit-Autos
 [*] Funktioniert unabhängig von Vanilla-Autospeicherungen - keine Interferenz
 [*] Speichert weiter auch wenn das Spiel pausiert ist oder bei verschiedenen Geschwindigkeiten läuft
 [*] Rotierendes Speichersystem verhindert Ansammlung von Speicherdateien
+[*] Keine Harmony-Patches und keine Abhängigkeiten
 [/list]
 
 [h2]FUNKTIONALITÄT[/h2]
 [list]
 [*] Verwendet Echtzeit-Verfolgung anstatt Spielzeit
-[*] Erstellt Speicherungen namens "Chronosave-X" mit rotierenden Nummern
+[*] Sobald Sie Ihre Kolonie benennen, werden die Speicherungen nach ihr benannt, mit rotierenden Nummern
 [*] Speicherungen sind Standard-RimWorld-Speicherungen - vollständig kompatibel mit allen Funktionen
+[*] Jede Chronospeicherung wird nach dem Schreiben geprüft, und Sie werden benachrichtigt, wenn eine unvollständig wirkt
 [*] Minimale Leistungsauswirkung durch effiziente Zeitverfolgung
 [/list]
 
 [h2]SPEICHERVERWALTUNG[/h2]
 [list]
-[*] Standard: 10 rotierende Chronospeicherungen (Chronosave-1 bis Chronosave-10)
+[*] Standard: 10 rotierende Chronospeicherungen pro Kolonie
 [*] Überschreibt automatisch die älteste Speicherung wenn das Limit erreicht wird
+[*] Jede benannte Kolonie behält ihren eigenen Satz, sodass zwei Kolonien sich nie gegenseitig überschreiben; noch namenlose Kolonien teilen sich einen Satz
 [*] Konfigurierbare Speicheranzahl (1-25 Speicherungen)
 [*] Unabhängige Speicherdateien kollidieren nicht mit manuellen oder Auto-Speicherungen
 [/list]
@@ -33,7 +36,7 @@ Verlieren Sie nie wieder Fortschritte! Chrono Speichern fügt ein Echtzeit-Autos
 [*] Speicherintervall: Einstellbar von 1 bis 60 Minuten
 [*] Speicheranzahl: Wählen Sie wie viele Chronospeicherungen beibehalten werden sollen
 [*] Ein-/Ausschalter: Schalten Sie das System nach Bedarf ein oder aus
-[*] Zugriff auf Einstellungen über Optionen → Mod-Einstellungen → Chrono Speichern
+[*] Zugriff auf Einstellungen über Optionen, dann Mod-Optionen, dann Chrono Save
 [/list]
 
 [h2]PAUSENFREUNDLICHES DESIGN[/h2]
@@ -41,6 +44,14 @@ Verlieren Sie nie wieder Fortschritte! Chrono Speichern fügt ein Echtzeit-Autos
 [*] Speicherungen gehen weiter auch wenn das Spiel pausiert ist
 [*] Funktioniert bei allen Spielgeschwindigkeiten (1x, 2x, 3x)
 [*] Perfekt für lange Planungssitzungen oder AFK-Perioden
+[*] Wartet ab, während Sie ein Ziel anvisieren, ein Shuttle-Ziel auswählen, eine Karawanenroute planen oder ein Dialogfenster lesen, und speichert, sobald Sie fertig sind
+[/list]
+
+[h2]HARDCORE-MODUS[/h2]
+[list]
+[*] Solange eine Kolonie im Hardcore-Modus geladen ist, werden keine Chronospeicherungen geschrieben
+[*] Dieser Modus ist auf eine einzige Speicherdatei ausgelegt, und jede zusätzliche Kopie ist eine Möglichkeit, zurückzuspringen
+[*] Es gibt keine Einstellung, um das zu ändern
 [/list]
 
 [hr][/hr] 
