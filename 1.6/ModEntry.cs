@@ -38,7 +38,15 @@ namespace ChronoSave
         {
             Settings = GetSettings<ChronoSaveSettings>();
 
-            Log.Message("[Chrono Save] Loaded.");
+            // Names the version, which this line did not until 1.1.0. The release checklist
+            // verifies the running build by reading it, and a line with no version in it
+            // cannot answer that question. Read from the metadata so the number lives in
+            // About.xml alone. Gated on dev mode: informational logging is for whoever is
+            // debugging.
+            if (Prefs.DevMode)
+            {
+                Log.Message($"[Chrono Save] Loaded version {pack.ModMetaData.ModVersion}.");
+            }
         }
         
         /// <summary>

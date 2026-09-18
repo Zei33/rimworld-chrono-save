@@ -1,8 +1,8 @@
-Chrono Save [1.6] (Chrono Save)
+Chrono Salvamento [1.6] (Chrono Save)
 
-[h1]Chrono Save[/h1]
+[h1]Chrono Salvamento[/h1]
 
-Nunca mais perca progresso! Chrono Save adiciona um sistema de salvamento automático em tempo real que protege sua colônia com salvamentos regulares baseados no tempo real, não no tempo de jogo.
+Chrono Salvamento usa o tempo real em vez do tempo do jogo para salvar sua colônia, então o intervalo entre um salvamento e outro é o mesmo com o jogo pausado, na velocidade 3x ou no meio de uma longa invasão inimiga.
 
 [h2]RECURSOS PRINCIPAIS[/h2]
 [list]
@@ -44,7 +44,7 @@ Nunca mais perca progresso! Chrono Save adiciona um sistema de salvamento autom�
 [*] Salvamentos continuam mesmo quando o jogo está pausado
 [*] Funciona em todas as velocidades do jogo (1x, 2x, 3x)
 [*] Perfeito para sessões longas de planejamento ou períodos AFK
-[*] Espera enquanto você mira um alvo, escolhe o destino de uma nave, planeja a rota de uma caravana ou lê uma janela de diálogo, e salva assim que você termina
+[*] Espera enquanto você mira um alvo, escolhe o destino de um transporte, planeja a rota de uma caravana ou lê uma janela de diálogo, e salva assim que você termina
 [/list]
 
 [h2]MODO MORTE PERMANENTE[/h2]

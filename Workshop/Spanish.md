@@ -1,13 +1,13 @@
-Chrono Save [1.6] (Chrono Save)
+Chrono Guardado [1.6] (Chrono Save)
 
-[h1]Chrono Save[/h1]
+[h1]Chrono Guardado[/h1]
 
-¡Nunca más pierdas progreso! Chrono Save añade un sistema de guardado automático en tiempo real que protege tu colonia con guardados regulares basados en el tiempo real, no en el tiempo del juego.
+Chrono Guardado crea guardados de tu colonia siguiendo el tiempo real en lugar del tiempo del juego, así que el intervalo entre uno y otro es el mismo con el juego pausado, a velocidad súper rápida o en mitad de un asalto largo.
 
 [h2]CARACTERÍSTICAS PRINCIPALES[/h2]
 [list]
 [*] Guardados automáticos cada 5 minutos de tiempo real (configurable)
-[*] Funciona independientemente de los guardados automáticos vanilla - sin interferencia
+[*] Funciona independientemente del autoguardado del juego base - sin interferencia
 [*] Continúa guardando incluso cuando el juego está pausado o a diferentes velocidades
 [*] Sistema de guardado rotativo evita la acumulación de archivos de guardado
 [*] Sin parches de Harmony y sin dependencias
@@ -44,7 +44,7 @@ Chrono Save [1.6] (Chrono Save)
 [*] Los guardados continúan incluso cuando el juego está pausado
 [*] Funciona a todas las velocidades del juego (1x, 2x, 3x)
 [*] Perfecto para sesiones largas de planificación o períodos AFK
-[*] Espera mientras seleccionas un objetivo, eliges el destino de una lanzadera, planificas la ruta de una caravana o lees un cuadro de diálogo, y guarda en cuanto terminas
+[*] Espera mientras seleccionas un objetivo, eliges el destino de un transbordador, planificas la ruta de una caravana o lees un cuadro de diálogo, y guarda en cuanto terminas
 [/list]
 
 [h2]MODO COMPROMETIDO[/h2]

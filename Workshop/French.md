@@ -1,8 +1,8 @@
-Sauvegarde Chronologique [1.6] (Chrono Save)
+Sauvegarde Chrono [1.6] (Chrono Save)
 
-[h1]Sauvegarde Chronologique[/h1]
+[h1]Sauvegarde Chrono[/h1]
 
-Ne perdez plus jamais vos progrès ! Sauvegarde Chronologique ajoute un système de sauvegarde automatique en temps réel qui protège votre colonie avec des sauvegardes régulières basées sur le temps réel, pas sur le temps de jeu.
+Sauvegarde Chrono déclenche ses sauvegardes en fonction du temps réel et non du temps de jeu, si bien que l'intervalle entre deux sauvegardes reste le même en pause, en vitesse très rapide ou au milieu d'un long raid.
 
 [h2]FONCTIONNALITÉS PRINCIPALES[/h2]
 [list]

@@ -2,7 +2,7 @@ Chrono Save [1.6]
 
 [h1]Chrono Save[/h1]
 
-Never lose progress again! Chrono Save adds a real-time autosave system that protects your colony with regular saves based on actual time, not game time.
+Chrono Save saves your colony on a real-time schedule rather than an in-game one, so the gap between saves is the same whether you are paused, playing at speed three, or sitting through a long raid.
 
 [h2]CORE FEATURES[/h2]
 [list]
