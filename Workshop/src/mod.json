@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "slug": "chrono-save",
+  "languages": {
+    "English": {
+      "title": "Chrono Save [1.6]",
+      "name": "Chrono Save",
+      "blurb": "Adds a separate autosave system that saves based on real world time passing instead of in-game time. This works independently of the vanilla autosave system."
+    },
+    "ChineseSimplified": {
+      "title": "时间保存 [1.6] (Chrono Save)",
+      "name": "时间存档",
+      "blurb": "添加一个独立的自动存档系统，基于现实世界时间而不是游戏内时间进行保存。此系统独立于原版自动存档系统运行。"
+    },
+    "French": {
+      "title": "Sauvegarde Chronologique [1.6] (Chrono Save)",
+      "name": "Sauvegarde Chrono",
+      "blurb": "Ajoute un système de sauvegarde automatique séparé qui sauvegarde selon le temps réel qui passe plutôt que le temps de jeu. Cela fonctionne indépendamment du système de sauvegarde automatique vanilla."
+    },
+    "German": {
+      "title": "Chrono Speichern [1.6] (Chrono Save)",
+      "name": "Chrono Speicherung",
+      "blurb": "Fügt ein separates Autospeicher-System hinzu, das basierend auf vergehender realer Zeit speichert statt auf Spielzeit. Dies funktioniert unabhängig vom Standard-Autospeicher-System."
+    },
+    "Japanese": {
+      "title": "クロノセーブ [1.6] (Chrono Save)",
+      "name": "クロノセーブ",
+      "blurb": "ゲーム内時間ではなく現実世界の時間経過に基づいて保存する独立したオートセーブシステムを追加します。これはバニラのオートセーブシステムとは独立して動作します。"
+    },
+    "Polish": {
+      "title": "Chrono Zapis [1.6] (Chrono Save)",
+      "name": "Chrono Zapis",
+      "blurb": "Dodaje oddzielny system automatycznego zapisu, który zapisuje na podstawie upływu rzeczywistego czasu zamiast czasu gry. Działa niezależnie od waniliowego systemu automatycznego zapisu."
+    },
+    "PortugueseBrazilian": {
+      "title": "Chrono Save [1.6] (Chrono Save)",
+      "name": "Chrono Save",
+      "blurb": "Adiciona um sistema de salvamento automático separado que salva baseado na passagem do tempo do mundo real ao invés do tempo do jogo. Isso funciona independentemente do sistema de salvamento automático vanilla."
+    },
+    "Russian": {
+      "title": "Хроно Сохранение [1.6] (Chrono Save)",
+      "name": "Хроно Сохранение",
+      "blurb": "Добавляет отдельную систему автосохранения, которая сохраняет игру на основе прошедшего реального времени, а не игрового времени. Работает независимо от ванильной системы автосохранения."
+    },
+    "Spanish": {
+      "title": "Chrono Save [1.6] (Chrono Save)",
+      "name": "Chrono Save",
+      "blurb": "Añade un sistema de guardado automático separado que guarda basándose en el paso del tiempo del mundo real en lugar del tiempo del juego. Esto funciona independientemente del sistema de guardado automático vanilla."
+    }
+  },
+  "required_strings": []
+}
